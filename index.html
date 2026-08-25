@@ -131,7 +131,8 @@
       max-width: 900px;
       margin: 0 auto;
     }
-    body.kanban-mode .app-shell { max-width: 1460px; }
+    body.kanban-mode .app-shell,
+    body.notes-mode  .app-shell { max-width: 1460px; }
 
     .sidebar {
       width: 316px;
@@ -150,7 +151,8 @@
     }
 
     .main { flex: 1; min-width: 0; max-width: 540px; }
-    body.kanban-mode .main { max-width: 1100px; }
+    body.kanban-mode .main,
+    body.notes-mode  .main { max-width: 1100px; }
 
     /* ═══ Shared block: bordered card ════════════════════════════════════ */
     .block {
@@ -800,6 +802,133 @@
     }
     .kb-empty { text-align: center; color: var(--text-dim); font-size: 12.5px; font-weight: 700; padding: 18px 8px; }
 
+    /* ═══ Notes ═══ */
+    body.notes-mode #task-list,
+    body.notes-mode #list-more,
+    body.notes-mode #empty-state,
+    body.notes-mode #kanban-board,
+    body.notes-mode .toolbar { display: none; }
+
+    #notes-panel { display: none; flex-direction: column; gap: 12px; }
+    #notes-panel.visible { display: flex; }
+
+    .note-compose {
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      box-shadow: var(--sh-sm);
+      padding: 11px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .note-compose input, .note-compose textarea {
+      width: 100%;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--surface);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      outline-offset: 1px;
+    }
+    .note-compose input { font-size: 15px; font-weight: 800; }
+    .note-compose textarea {
+      font-size: 14px; font-weight: 500; line-height: 1.55;
+      resize: vertical; min-height: 90px; max-height: 420px;
+    }
+    .note-compose input::placeholder, .note-compose textarea::placeholder { color: var(--text-dim); font-weight: 500; }
+    .note-compose-actions { display: flex; align-items: center; gap: 7px; }
+    .note-compose-actions .hint { margin-left: auto; text-align: right; }
+
+    /*  Notes sit on the same wide canvas as the board and lay out as a grid
+     *  of coloured cards, so a page of notes reads like a pinboard rather
+     *  than a long single column.  */
+    #note-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+
+    .note-card {
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      box-shadow: var(--sh-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .note-card.is-new { animation: pop .18s ease; }
+    .note-card.pinned { box-shadow: var(--sh); }
+
+    /*  One accent per note, mirroring the board's coloured column headers so
+     *  the two views read as the same app.  */
+    .note-head {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 9px 11px;
+      border-bottom: var(--bd) solid var(--line);
+      background: var(--tan);
+      color: var(--text);
+    }
+    .note-card.c1 .note-head { background: var(--orange); color: var(--on-orange); }
+    .note-card.c2 .note-head { background: var(--blue);   color: var(--on-blue); }
+    .note-card.c3 .note-head { background: var(--green);  color: var(--on-green); }
+    .note-card.c4 .note-head { background: var(--yellow); color: var(--on-yellow); }
+    .note-card.c5 .note-head { background: var(--red);    color: var(--on-red); }
+
+    .note-title {
+      flex: 1; min-width: 0;
+      font-size: 15px; font-weight: 800; line-height: 1.35;
+      word-break: break-word; cursor: text; border-radius: 5px;
+      color: inherit;
+    }
+    .note-title mark { background: var(--surface); color: var(--text); }
+    .note-actions { display: flex; gap: 4px; flex-shrink: 0; margin-left: auto; }
+    .note-actions .iconbtn {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,.35);
+      border-color: var(--line);
+      color: inherit;
+    }
+    .note-actions .iconbtn:hover { background: var(--surface); color: var(--text); }
+    .note-actions .iconbtn.on { background: var(--surface); color: var(--text); }
+    .note-card .note-head .task-tag { background: var(--surface); color: var(--text); }
+
+    .note-body {
+      flex: 1;
+      padding: 10px 12px 0;
+      font-size: 14px; font-weight: 500; line-height: 1.55;
+      white-space: pre-wrap; word-break: break-word;
+      cursor: text;
+    }
+    .note-body:hover { background: var(--surface-2); }
+    .note-body.clamped {
+      display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .note-foot {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 9px 12px 11px;
+      font-size: 11.5px; font-weight: 700; color: var(--text-dim);
+    }
+    .note-foot .btn { margin-left: auto; }
+
+    .note-edit { display: flex; flex-direction: column; gap: 8px; padding: 11px 12px; }
+    .note-edit input, .note-edit textarea {
+      width: 100%; font-family: inherit; color: var(--text);
+      background: var(--surface); border: var(--bd) solid var(--orange);
+      border-radius: 8px; padding: 8px 10px; outline: none;
+    }
+    .note-edit input { font-size: 15px; font-weight: 800; }
+    .note-edit textarea {
+      font-size: 14px; font-weight: 500; line-height: 1.55;
+      resize: vertical; min-height: 120px; max-height: 460px;
+    }
+    .note-edit-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .note-edit-actions .edit-hint { margin: 0 0 0 auto; text-align: right; }
+
     /* ═══ Toast ══════════════════════════════════════════════════════════ */
     #toast-host {
       position: fixed;
@@ -963,9 +1092,9 @@
 
     @media (max-width: 940px) {
       body { padding: 18px 12px 90px; }
-      .app-shell, body.kanban-mode .app-shell { flex-direction: column; max-width: 620px; }
+      .app-shell, body.kanban-mode .app-shell, body.notes-mode .app-shell { flex-direction: column; max-width: 620px; }
       .sidebar { width: 100%; position: static; max-height: none; overflow: visible; }
-      .main, body.kanban-mode .main { max-width: 100%; width: 100%; }
+      .main, body.kanban-mode .main, body.notes-mode .main { max-width: 100%; width: 100%; }
       textarea#new-task { min-height: 128px; }
       /* one column at a time, snapped, on a phone */
       #kanban-board.visible { scroll-snap-type: x mandatory; }
@@ -1045,9 +1174,9 @@
 
         <div class="sync-body" id="sync-body">
           <div class="sync-note">
-            Stores your tasks in <strong>data.json</strong> in a GitHub repo, so any
-            browser on any machine sees the same list. Reading a public repo needs
-            no token — only saving does.
+            Stores your tasks and notes as <strong>two separate JSON files</strong> in a
+            GitHub repo, so any browser on any machine sees the same data. Reading a
+            public repo needs no token — only saving does.
           </div>
           <div class="sync-grid">
             <div>
@@ -1063,8 +1192,12 @@
               <input id="sync-branch" type="text" placeholder="main" autocomplete="off" spellcheck="false" />
             </div>
             <div>
-              <label class="field-label" for="sync-path">File</label>
+              <label class="field-label" for="sync-path">Tasks file</label>
               <input id="sync-path" type="text" placeholder="data.json" autocomplete="off" spellcheck="false" />
+            </div>
+            <div>
+              <label class="field-label" for="sync-notes-path">Notes file</label>
+              <input id="sync-notes-path" type="text" placeholder="notes.json" autocomplete="off" spellcheck="false" />
             </div>
           </div>
 
@@ -1166,6 +1299,14 @@
           </svg>
           Board
         </button>
+        <button class="tab" id="notes-view-btn" role="tab" aria-selected="false" aria-controls="view-panel">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 1.6h10a1.4 1.4 0 0 1 1.4 1.4v10a1.4 1.4 0 0 1-1.4 1.4H3A1.4 1.4 0 0 1 1.6 13V3A1.4 1.4 0 0 1 3 1.6z"
+                  stroke="currentColor" stroke-width="1.8"/>
+            <path d="M4.6 5.4h6.8M4.6 8h6.8M4.6 10.6h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Notes
+        </button>
       </div>
 
       <div class="tabpanel" id="view-panel" role="tabpanel">
@@ -1180,6 +1321,26 @@
           <div class="empty-emoji" id="empty-emoji">🎉</div>
           <div class="empty-title" id="empty-title">All clear!</div>
           <div class="empty-sub" id="empty-sub">Add a task on the left to get started.</div>
+        </div>
+
+        <div id="notes-panel">
+          <div class="note-compose">
+            <label class="sr-only" for="note-title">Note title</label>
+            <input id="note-title" type="text" maxlength="200" placeholder="Note title (optional)" autocomplete="off" />
+            <label class="sr-only" for="note-body">Note</label>
+            <textarea id="note-body" rows="4" placeholder="Write anything — a snippet, a decision, something you learned. #tags work here too."></textarea>
+            <div class="note-compose-actions">
+              <button class="btn btn--sm btn--green" id="note-add">+ Add Note</button>
+              <button class="btn btn--sm" id="note-clear">Clear</button>
+              <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to add</span>
+            </div>
+          </div>
+          <div id="note-list"></div>
+          <div id="notes-empty" style="display:none">
+            <div class="empty-emoji" id="notes-empty-emoji">📝</div>
+            <div class="empty-title" id="notes-empty-title">No notes yet</div>
+            <div class="empty-sub" id="notes-empty-sub">Write your first one above.</div>
+          </div>
         </div>
 
         <div id="kanban-board">
@@ -1254,6 +1415,10 @@
 const STORE_KEY  = "tasks_v4";
 const PREF_KEY   = "todo_prefs_v1";
 const TOMB_KEY   = "todo_tombstones_v1";
+const NOTES_KEY  = "notes_v1";
+const NOTE_TOMB_KEY = "notes_tombstones_v1";
+const MAX_NOTE   = 20000;      // a note is long-form; tasks are one-liners
+const NOTE_COLORS = ["Sand", "Orange", "Blue", "Green", "Yellow", "Red"];
 const SYNC_KEY   = "todo_sync_v1";     // repo coordinates (safe to keep)
 const TOKEN_KEY  = "todo_gh_token";    // kept apart; never exported
 const SEED_KEY   = "todo_is_seed";     // "the list is still the demo, not real work"
@@ -1397,6 +1562,10 @@ let undoSnapshot = null;      // { label, tasks }
 let editingId = null;         // task currently open in the inline text editor
 let lastAddedId = null;       // only this task plays the entrance animation
 let tombstones  = [];         // { id, deletedAt } — so deletes survive a merge
+let notes       = [];
+let noteTombs   = [];
+let editingNoteId = null;     // note currently open in the editor
+let noteDraft   = null;       // unsaved new-note buffer, so a re-render can't eat it
 let localIsSeed = false;      // true while the list is still the untouched demo
 let storageOK = true;
 
@@ -1434,6 +1603,56 @@ function tombstone(id) {
   tombstones = tombstones.filter(x => x.id !== id);
   tombstones.push({ id, deletedAt: Date.now() });
   localIsSeed = false;
+}
+
+/*  Notes are their own record type with their own file. Kept structurally
+ *  parallel to tasks (id / updatedAt / tombstones) so the same merge rules
+ *  apply, but never merged into the same JSON — a note is long-form text and
+ *  would bloat every task commit.  */
+function normalizeNote(n, i) {
+  const title = typeof n.title === "string" ? n.title.slice(0, 200) : "";
+  const body = typeof n.body === "string" ? n.body.slice(0, MAX_NOTE) : "";
+  return {
+    id: (typeof n.id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(n.id)) ? n.id : uid(),
+    title,
+    body,
+    pinned: n.pinned === true,
+    color: [0,1,2,3,4,5].includes(n.color) ? n.color : 0,
+    created: Number.isFinite(n.created) ? n.created : Date.now() - i,
+    updatedAt: Number.isFinite(n.updatedAt) ? n.updatedAt
+             : (Number.isFinite(n.created) ? n.created : Date.now()),
+  };
+}
+
+function touchNote(n) {
+  if (n) n.updatedAt = Date.now();
+  return n;
+}
+
+function noteTombstone(id) {
+  noteTombs = noteTombs.filter(x => x.id !== id);
+  noteTombs.push({ id, deletedAt: Date.now() });
+}
+
+/** Title if there is one, else the first non-empty line of the body. */
+function noteHeading(n) {
+  if (n.title.trim()) return n.title.trim();
+  const first = (n.body || "").split("\n").map(l => l.trim()).find(Boolean);
+  return first ? truncate(first, 60) : "Untitled note";
+}
+
+function noteMatchesSearch(n) {
+  if (!_searchLc) return true;
+  return (n.title + "\n" + n.body).toLowerCase().includes(_searchLc);
+}
+function noteMatchesTag(n) {
+  return !tagFilter || tagsOf(n.title + " " + n.body).includes(tagFilter);
+}
+
+function visibleNotes() {
+  return notes
+    .filter(n => noteMatchesSearch(n) && noteMatchesTag(n))
+    .sort((a, b) => (b.pinned - a.pinned) || (b.updatedAt - a.updatedAt));
 }
 
 function uid() {
@@ -1503,8 +1722,21 @@ function load() {
   } catch {}
 
   try {
+    const rawN = localStorage.getItem(NOTES_KEY);
+    const parsedN = rawN ? JSON.parse(rawN) : [];
+    if (Array.isArray(parsedN)) notes = parsedN.map(normalizeNote);
+  } catch { notes = []; }
+
+  try {
+    const rawNT = localStorage.getItem(NOTE_TOMB_KEY);
+    const parsedNT = rawNT ? JSON.parse(rawNT) : [];
+    if (Array.isArray(parsedNT)) noteTombs = parsedNT.filter(t => t && typeof t.id === "string");
+  } catch {}
+
+  try {
     const cfg = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}");
     if (cfg && typeof cfg === "object") sync = Object.assign(sync, cfg);
+    if (!sync.notesPath) sync.notesPath = "notes.json";
     sync.token = localStorage.getItem(TOKEN_KEY) || "";
   } catch {}
 
@@ -1514,7 +1746,7 @@ function load() {
   } catch {}
   if (!["all","active","done","overdue","soon"].includes(prefs.filter)) prefs.filter = "all";
   if (!["created","due","priority","alpha","manual"].includes(prefs.sort)) prefs.sort = "created";
-  if (!["list","kanban"].includes(prefs.view)) prefs.view = "list";
+  if (!["list","kanban","notes"].includes(prefs.view)) prefs.view = "list";
   if (!["light","dark","system"].includes(prefs.theme)) prefs.theme = "system";
 }
 
@@ -1538,6 +1770,21 @@ function save() {
 function pruneTombstones() {
   const cutoff = Date.now() - TOMB_TTL;
   tombstones = tombstones.filter(t => t && t.id && (t.deletedAt || 0) >= cutoff);
+  noteTombs = noteTombs.filter(t => t && t.id && (t.deletedAt || 0) >= cutoff);
+}
+
+function saveNotes() {
+  pruneTombstones();
+  if (storageOK) {
+    try {
+      localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+      localStorage.setItem(NOTE_TOMB_KEY, JSON.stringify(noteTombs));
+    } catch (err) {
+      storageOK = false;
+      toast("Couldn't save notes — storage is full or blocked.", null, null, 10000);
+    }
+  }
+  scheduleSync("notes");
 }
 function savePrefs() {
   try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {}
@@ -1545,7 +1792,16 @@ function savePrefs() {
 
 // Another tab wrote to storage — pick up its changes instead of clobbering them.
 window.addEventListener("storage", (e) => {
-  if (e.key !== STORE_KEY || !e.newValue) return;
+  if (!e.newValue) return;
+  if (e.key === NOTES_KEY) {
+    if (editingNoteId || document.querySelector(".overlay.visible")) return;
+    try {
+      const next = JSON.parse(e.newValue);
+      if (Array.isArray(next)) { notes = next.map(normalizeNote); render(); }
+    } catch {}
+    return;
+  }
+  if (e.key !== STORE_KEY) return;
   // Re-rendering would tear down an open editor mid-keystroke. This tab's own
   // save() will follow and win, which is the same last-write-wins either way.
   if (editingId || document.querySelector(".overlay.visible")) return;
@@ -1839,6 +2095,109 @@ function dropReorder(dragId, targetId, before) {
   ordered.forEach((t, i) => { if (t.order !== i) { t.order = i; touch(t); } });
   save(); render();
   announce("Task moved");
+}
+
+/* ══ Notes CRUD ══════════════════════════════════════════════════ */
+function addNote(title, body) {
+  const t = String(title || "").trim().slice(0, 200);
+  const b = String(body || "").replace(/\s+$/, "").slice(0, MAX_NOTE);
+  if (!t && !b) return null;
+  const note = {
+    id: uid(), title: t, body: b, pinned: false,
+    // Cycle the palette so a page of notes is varied without anyone picking.
+    color: notes.length % NOTE_COLORS.length,
+    created: Date.now(), updatedAt: Date.now(),
+  };
+  notes.unshift(note);
+  saveNotes();
+  render();
+  announce("Note added");
+  return note;
+}
+
+function updateNote(id, patch) {
+  const n = notes.find(x => x.id === id);
+  if (!n) return false;
+  let changed = false;
+  if (typeof patch.title === "string" && patch.title.slice(0, 200) !== n.title) {
+    n.title = patch.title.slice(0, 200); changed = true;
+  }
+  if (typeof patch.body === "string" && patch.body.slice(0, MAX_NOTE) !== n.body) {
+    n.body = patch.body.slice(0, MAX_NOTE); changed = true;
+  }
+  if (typeof patch.pinned === "boolean" && patch.pinned !== n.pinned) {
+    n.pinned = patch.pinned; changed = true;
+  }
+  if (Number.isInteger(patch.color) && patch.color !== n.color) {
+    n.color = patch.color; changed = true;
+  }
+  if (!changed) return false;
+  touchNote(n);
+  saveNotes();
+  render();
+  announce("Note updated");
+  return true;
+}
+
+function cycleNoteColor(id) {
+  const n = notes.find(x => x.id === id);
+  if (!n) return;
+  n.color = (n.color + 1) % NOTE_COLORS.length;
+  touchNote(n);
+  saveNotes();
+  render();
+  announce(`Note colour ${NOTE_COLORS[n.color]}`);
+}
+
+function togglePin(id) {
+  const n = notes.find(x => x.id === id);
+  if (!n) return;
+  n.pinned = !n.pinned;
+  touchNote(n);
+  saveNotes();
+  render();
+  announce(n.pinned ? "Note pinned" : "Note unpinned");
+}
+
+async function removeNote(id) {
+  const n = notes.find(x => x.id === id);
+  if (!n) return;
+  const yes = await confirmAction({
+    title: "Delete this note?",
+    message: "It will be removed from your notes.",
+    quote: truncate(noteHeading(n), 120),
+    confirmLabel: "Delete",
+  });
+  if (!yes) { announce("Delete cancelled"); return; }
+  if (!notes.some(x => x.id === id)) return;
+
+  noteSnapshot("delete note");
+  notes = notes.filter(x => x.id !== id);
+  noteTombstone(id);
+  saveNotes();
+  render();
+  announce("Note deleted");
+  toast(`Deleted “${truncate(noteHeading(n), 30)}”`, "Undo", undoNotes);
+}
+
+let noteUndo = null;
+function noteSnapshot(label) {
+  noteUndo = {
+    label,
+    notes: notes.map(n => ({ ...n })),
+    tombs: noteTombs.map(t => ({ ...t })),
+  };
+}
+function undoNotes() {
+  if (!noteUndo) { toast("Nothing to undo"); return; }
+  notes = noteUndo.notes.map(n => ({ ...n }));
+  noteTombs = noteUndo.tombs.map(t => ({ ...t }));
+  const what = noteUndo.label;
+  noteUndo = null;
+  saveNotes();
+  render();
+  announce(`Undid ${what}`);
+  toast(`Undid ${what}`);
 }
 
 /* ══ Import / export ═════════════════════════════════════════════════════ */
@@ -2170,8 +2529,12 @@ function render() {
   _searchLc = search.trim().toLowerCase();
   syncFilterChrome();
   document.body.classList.toggle("kanban-mode", prefs.view === "kanban");
+  document.body.classList.toggle("notes-mode", prefs.view === "notes");
   document.getElementById("kanban-board").classList.toggle("visible", prefs.view === "kanban");
-  if (prefs.view === "kanban") renderKanban(); else renderList();
+  document.getElementById("notes-panel").classList.toggle("visible", prefs.view === "notes");
+  if (prefs.view === "notes") renderNotes();
+  else if (prefs.view === "kanban") renderKanban();
+  else renderList();
   updateCounts();
   updateSummary();
   updateBanner();
@@ -2454,6 +2817,183 @@ function renderColumn(status, colTasks) {
   reconcile(col, els);
 }
 
+/* ══ Notes rendering ════════════════════════════════════════════ */
+const noteNodes = new Map();
+let lastAddedNoteId = null;
+
+function noteSignature(n) {
+  return [n.title, n.body, n.pinned ? 1 : 0, n.color, n.updatedAt,
+          n.id === lastAddedNoteId ? 1 : 0, _searchLc].join("\u0001");
+}
+function invalidateNote(id) { noteNodes.delete(id); }
+
+function relativeTime(ms) {
+  const diff = Date.now() - ms;
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+const PALETTE_SVG = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.8"/>
+  <circle cx="8" cy="5" r="1.25" fill="currentColor"/>
+  <circle cx="11" cy="8" r="1.25" fill="currentColor"/>
+  <circle cx="5" cy="8" r="1.25" fill="currentColor"/></svg>`;
+
+const PIN_SVG = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path d="M6 1.8h4l-.6 4.2 2.6 2.2v1.4H4v-1.4l2.6-2.2L6 1.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M8 9.6V14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+
+function buildNoteEl(n) {
+  const el = document.createElement("article");
+  el.className = "note-card c" + (n.color || 0) + (n.pinned ? " pinned" : "")
+    + (n.id === lastAddedNoteId ? " is-new" : "");
+  el.dataset.noteId = n.id;
+
+  /*  Only a real title gets a heading. Deriving one from the first line meant
+   *  either printing that line twice or truncating it away, so an untitled
+   *  note simply shows its colour band and its body, whole.  */
+  const hasTitle = !!n.title.trim();
+  const longBody = n.body.split("\n").length > 8 || n.body.length > 600;
+
+  el.innerHTML = `
+      <div class="note-head">
+        ${hasTitle ? `<div class="note-title" title="Click to edit">${renderText(n.title, search)}</div>` : ""}
+        <div class="note-actions">
+          <button class="iconbtn" data-nact="color"
+                  title="Colour: ${NOTE_COLORS[n.color || 0]} (click to change)"
+                  aria-label="Note colour ${NOTE_COLORS[n.color || 0]}, click to change">${PALETTE_SVG}</button>
+          <button class="iconbtn${n.pinned ? " on" : ""}" data-nact="pin"
+                  title="${n.pinned ? "Unpin" : "Pin to top"}" aria-label="${n.pinned ? "Unpin note" : "Pin note to top"}">${PIN_SVG}</button>
+          <button class="iconbtn" data-nact="edit" title="Edit note" aria-label="Edit note">${PEN_SVG}</button>
+          <button class="iconbtn iconbtn--danger" data-nact="del" title="Delete note" aria-label="Delete note">${X_SVG}</button>
+        </div>
+      </div>
+      ${n.body.trim() ? `<div class="note-body${longBody ? " clamped" : ""}" title="Click to edit">${renderText(n.body, search)}</div>` : ""}
+      <div class="note-foot">
+        <span>${n.updatedAt !== n.created ? "edited " : ""}${escHtml(relativeTime(n.updatedAt))}</span>
+        ${longBody ? `<button class="btn btn--sm" data-nact="expand">Show more</button>` : ""}
+      </div>`;
+  return el;
+}
+
+function renderNotes() {
+  const list = document.getElementById("note-list");
+  const empty = document.getElementById("notes-empty");
+  const visible = visibleNotes();
+
+  empty.style.display = visible.length === 0 ? "block" : "none";
+  if (visible.length === 0) {
+    list.replaceChildren();
+    noteNodes.clear();
+    const t = document.getElementById("notes-empty-title");
+    const sub = document.getElementById("notes-empty-sub");
+    if (search || tagFilter) {
+      document.getElementById("notes-empty-emoji").textContent = "\ud83d\udd0d";
+      t.textContent = "No matching notes";
+      sub.textContent = tagFilter ? `Nothing tagged #${truncate(tagFilter, 40)}.`
+                                  : `Nothing matches \u201c${truncate(search, 40)}\u201d.`;
+    } else {
+      document.getElementById("notes-empty-emoji").textContent = "\ud83d\udcdd";
+      t.textContent = "No notes yet";
+      sub.textContent = "Write your first one above.";
+    }
+    return;
+  }
+
+  const els = [];
+  const alive = new Set(notes.map(n => n.id));
+  for (const n of visible) {
+    const sig = noteSignature(n);
+    const cached = noteNodes.get(n.id);
+    let el;
+    if (cached && cached.sig === sig) el = cached.el;
+    else { el = buildNoteEl(n); noteNodes.set(n.id, { el, sig }); }
+    els.push(el);
+  }
+  reconcile(list, els);
+  for (const id of noteNodes.keys()) if (!alive.has(id)) noteNodes.delete(id);
+}
+
+/*  Inline note editing: title + body, saved together. Escape cancels,
+ *  Ctrl+Enter saves, and clicking away commits — same contract as tasks.  */
+function startNoteEdit(el, id) {
+  if (editingNoteId) return;
+  const n = notes.find(x => x.id === id);
+  if (!n) return;
+  editingNoteId = id;
+  invalidateNote(id);
+
+  const wrap = document.createElement("div");
+  wrap.className = "note-edit";
+
+  const title = document.createElement("input");
+  title.type = "text"; title.maxLength = 200; title.value = n.title;
+  title.placeholder = "Note title (optional)";
+  title.setAttribute("aria-label", "Note title");
+
+  const body = document.createElement("textarea");
+  body.value = n.body; body.maxLength = MAX_NOTE;
+  body.setAttribute("aria-label", "Note body");
+
+  const actions = document.createElement("div");
+  actions.className = "note-edit-actions";
+  const save = document.createElement("button");
+  save.type = "button"; save.className = "btn btn--sm btn--green"; save.textContent = "Save";
+  const cancel = document.createElement("button");
+  cancel.type = "button"; cancel.className = "btn btn--sm"; cancel.textContent = "Cancel";
+  const hint = document.createElement("span");
+  hint.className = "edit-hint";
+  hint.textContent = "Ctrl+Enter saves \u00b7 Esc cancels";
+  actions.append(save, cancel, hint);
+
+  wrap.append(title, body, actions);
+  el.replaceChildren(wrap);
+  autoGrow(body, 460);
+  body.focus();
+  body.setSelectionRange(body.value.length, body.value.length);
+
+  let settled = false;
+  const finish = (commit) => {
+    if (settled) return;
+    settled = true;
+    editingNoteId = null;
+    const still = notes.find(x => x.id === id);
+    const applied = commit && still
+      && updateNote(id, { title: title.value, body: body.value });
+    if (!applied) render();
+  };
+
+  body.addEventListener("input", () => autoGrow(body, 460));
+  const onKey = (e) => {
+    e.stopPropagation();
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  };
+  title.addEventListener("keydown", (e) => {
+    onKey(e);
+    if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); body.focus(); }
+  });
+  body.addEventListener("keydown", onKey);
+
+  [save, cancel].forEach(b => b.addEventListener("mousedown", (e) => e.preventDefault()));
+  save.addEventListener("click", () => finish(true));
+  cancel.addEventListener("click", () => finish(false));
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finish(false); }
+  });
+  wrap.addEventListener("focusout", (e) => {
+    if (wrap.contains(e.relatedTarget)) return;
+    setTimeout(() => { if (!wrap.contains(document.activeElement)) finish(true); }, 0);
+  });
+}
+
 /* ══ Summary widgets ═════════════════════════════════════════════════════ */
 function updateCounts() {
   // One pass instead of one scan per filter button.
@@ -2494,9 +3034,15 @@ function updateSummary() {
   ring.setAttribute("stroke-dashoffset", (C * (1 - pct / 100)).toFixed(1));
   document.getElementById("ring-label").textContent = pct + "%";
 
-  document.getElementById("stats-text").textContent =
-    total === 0 ? "No tasks yet" : `${done} of ${total} completed${overdue ? ` · ${overdue} overdue` : ""}`;
-  document.getElementById("clear-done").style.display = done > 0 ? "" : "none";
+  if (prefs.view === "notes") {
+    document.getElementById("stats-text").textContent =
+      notes.length === 0 ? "No notes yet" : `${plural(notes.length, "note")}`;
+    document.getElementById("clear-done").style.display = "none";
+  } else {
+    document.getElementById("stats-text").textContent =
+      total === 0 ? "No tasks yet" : `${done} of ${total} completed${overdue ? ` · ${overdue} overdue` : ""}`;
+    document.getElementById("clear-done").style.display = done > 0 ? "" : "none";
+  }
 }
 
 function updateBanner() {
@@ -2661,6 +3207,7 @@ function syncControls() {
   document.getElementById("sort-select").value = prefs.sort;
   document.getElementById("list-view-btn").setAttribute("aria-selected", String(prefs.view === "list"));
   document.getElementById("kanban-view-btn").setAttribute("aria-selected", String(prefs.view === "kanban"));
+  document.getElementById("notes-view-btn").setAttribute("aria-selected", String(prefs.view === "notes"));
 }
 
 function setFilter(f) {
@@ -2741,6 +3288,63 @@ document.getElementById("sort-select").addEventListener("change", (e) => {
   if (prefs.sort === "manual") adoptCurrentOrder();
   savePrefs(); save(); render();
 });
+document.getElementById("notes-view-btn").addEventListener("click", () => setView("notes"));
+
+const noteTitleEl = document.getElementById("note-title");
+const noteBodyEl = document.getElementById("note-body");
+
+function submitNote() {
+  const n = addNote(noteTitleEl.value, noteBodyEl.value);
+  if (!n) { noteBodyEl.focus(); announce("Write something first"); return; }
+  lastAddedNoteId = n.id;
+  noteTitleEl.value = "";
+  noteBodyEl.value = "";
+  autoGrow(noteBodyEl, 420);
+  render();
+  lastAddedNoteId = null;
+  noteBodyEl.focus();
+}
+
+document.getElementById("note-add").addEventListener("click", submitNote);
+document.getElementById("note-clear").addEventListener("click", () => {
+  noteTitleEl.value = ""; noteBodyEl.value = "";
+  autoGrow(noteBodyEl, 420); noteBodyEl.focus();
+});
+noteBodyEl.addEventListener("input", () => autoGrow(noteBodyEl, 420));
+[noteTitleEl, noteBodyEl].forEach(el => el.addEventListener("keydown", (e) => {
+  e.stopPropagation();
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitNote(); }
+}));
+
+// Delegated, like the task list — one listener, survives every re-render.
+document.getElementById("note-list").addEventListener("click", (e) => {
+  const tagEl = e.target.closest(".task-tag");
+  if (tagEl) { setTagFilter(tagEl.dataset.tag); return; }
+
+  const host = e.target.closest("[data-note-id]");
+  if (!host) return;
+  const id = host.dataset.noteId;
+  const btn = e.target.closest("[data-nact]");
+  const act = btn ? btn.dataset.nact : null;
+
+  if (act === "del") { removeNote(id); return; }
+  if (act === "pin") { togglePin(id); return; }
+  if (act === "color") { cycleNoteColor(id); return; }
+  if (act === "expand") {
+    const b = host.querySelector(".note-body");
+    if (b) {
+      const open = b.classList.toggle("clamped");
+      btn.textContent = open ? "Show more" : "Show less";
+    }
+    return;
+  }
+  if (act === "edit" || e.target.closest(".note-title, .note-body, .note-head")) {
+    if (host.querySelector(".note-edit")) return;
+    startNoteEdit(host, id);
+  }
+});
+
 document.getElementById("list-view-btn").addEventListener("click", () => setView("list"));
 document.getElementById("kanban-view-btn").addEventListener("click", () => setView("kanban"));
 document.getElementById("clear-done").addEventListener("click", clearDone);
@@ -2825,7 +3429,11 @@ document.addEventListener("keydown", (e) => {
 
   const k = e.key;
   if (k === "/")               { e.preventDefault(); searchInput.focus(); searchInput.select(); }
-  else if (k.toLowerCase() === "n") { e.preventDefault(); newTask.focus(); }
+  else if (k.toLowerCase() === "n") {
+    e.preventDefault();
+    if (prefs.view === "notes") document.getElementById("note-body").focus();
+    else newTask.focus();
+  }
   else if (k.toLowerCase() === "v") { e.preventDefault(); setView(prefs.view === "list" ? "kanban" : "list"); }
   else if (k.toLowerCase() === "t") { e.preventDefault(); cycleTheme(); }
   else if (k === "?")          { e.preventDefault(); openHelp(); }
@@ -2856,18 +3464,14 @@ const PUSH_DEBOUNCE = 3000;
 const MIN_PUSH_GAP  = 10000;
 const SIZE_WARN     = 750 * 1024;   // the Contents API tops out around 1 MB
 
-let sync = { owner: "", repo: "", branch: "main", path: "data.json", token: "", auto: true };
-let remoteSha = null;
-let remoteEtag = null;        // conditional GETs: a 304 is free when authorised
-let lastPushedFingerprint = null;
-let lastPushAt = 0;
+let sync = { owner: "", repo: "", branch: "main", path: "data.json",
+             notesPath: "notes.json", token: "", auto: true };
+let lastPushAt = 0;           // most recent write across any file
 let lastPullAt = 0;
 let rateLimitedUntil = 0;
 let rateStrikes = 0;
 let sizeWarned = false;
 let syncTimer = null;
-let syncBusy = false;
-let pushQueued = false;
 let initialPullDone = false;
 
 const syncConfigured = () => !!(sync.owner && sync.repo && sync.path);
@@ -2964,8 +3568,97 @@ function contentFingerprint() {
   return JSON.stringify({ t: tasks.map(serializeTask), d: tombstones });
 }
 
-function contentsUrl(withRef) {
-  const path = String(sync.path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+function serializeNote(n) {
+  const o = { id: n.id };
+  if (n.title) o.title = n.title;
+  if (n.body) o.body = n.body;
+  if (n.pinned) o.pinned = true;
+  if (n.color) o.color = n.color;
+  o.created = n.created;
+  o.updatedAt = n.updatedAt;
+  return o;
+}
+
+function notesPayload() {
+  return {
+    app: "workbench-notes",
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    notes: notes.map(serializeNote),
+    tombstones: noteTombs,
+  };
+}
+
+function notesFingerprint() {
+  return JSON.stringify({ n: notes.map(serializeNote), d: noteTombs });
+}
+
+/*  Merging is identical for both record types — both are {id, updatedAt}
+ *  with {id, deletedAt} tombstones — so mergeState is reused verbatim.  */
+function applyRemoteTasks(parsed) {
+  const rTasks = (Array.isArray(parsed) ? parsed : (parsed && parsed.tasks) || []).map(normalizeTask);
+  const rTombs = (parsed && parsed.tombstones) || [];
+  if (localIsSeed && rTasks.length) {
+    // First run on this machine: the demo list is not real data, so adopt
+    // the repo wholesale instead of merging ten fake tasks into it.
+    tasks = rTasks;
+    tombstones = rTombs;
+    localIsSeed = false;
+    try { localStorage.removeItem(SEED_KEY); } catch {}
+  } else {
+    const merged = mergeState(tasks, tombstones, rTasks, rTombs);
+    tasks = merged.tasks;
+    tombstones = merged.tombstones;
+  }
+  if (storageOK) {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
+      localStorage.setItem(TOMB_KEY, JSON.stringify(tombstones));
+    } catch {}
+  }
+}
+
+function applyRemoteNotes(parsed) {
+  const rNotes = (Array.isArray(parsed) ? parsed : (parsed && parsed.notes) || []).map(normalizeNote);
+  const rTombs = (parsed && parsed.tombstones) || [];
+  const merged = mergeState(notes, noteTombs, rNotes, rTombs);
+  notes = merged.tasks;              // mergeState is generic; field name is historical
+  noteTombs = merged.tombstones;
+  if (storageOK) {
+    try {
+      localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+      localStorage.setItem(NOTE_TOMB_KEY, JSON.stringify(noteTombs));
+    } catch {}
+  }
+}
+
+/*  One descriptor per synced file. Everything below operates on these, so
+ *  adding a third file later is a matter of adding an entry — not another
+ *  copy of the conflict/rate-limit logic.  */
+const stores = {
+  tasks: {
+    key: "tasks", label: "tasks",
+    pathOf: () => sync.path,
+    payload: remotePayload,
+    fingerprintOf: contentFingerprint,
+    applyRemote: applyRemoteTasks,
+    sha: null, etag: null, fingerprint: null,
+    busy: false, queued: false, timer: null, lastPushAt: 0,
+  },
+  notes: {
+    key: "notes", label: "notes",
+    pathOf: () => sync.notesPath,
+    payload: notesPayload,
+    fingerprintOf: notesFingerprint,
+    applyRemote: applyRemoteNotes,
+    sha: null, etag: null, fingerprint: null,
+    busy: false, queued: false, timer: null, lastPushAt: 0,
+  },
+};
+const storeOf = (which) => stores[which] || stores.tasks;
+
+function contentsUrl(withRef, which) {
+  const path = String(storeOf(which).pathOf()).split("/").filter(Boolean).map(encodeURIComponent).join("/");
   const base = `${GH_API}/repos/${encodeURIComponent(sync.owner)}/${encodeURIComponent(sync.repo)}/contents/${path}`;
   return withRef ? `${base}?ref=${encodeURIComponent(sync.branch || "main")}` : base;
 }
@@ -2999,14 +3692,14 @@ function rateLimitWaitMs(res) {
   return Math.min(15 * 60 * 1000, 60000 * Math.pow(2, rateStrikes));
 }
 
-function noteRateLimit(res, where) {
+function noteRateLimit(res, where, which) {
   rateStrikes++;
   const wait = rateLimitWaitMs(res);
   rateLimitedUntil = Date.now() + wait;
   const mins = Math.max(1, Math.round(wait / 60000));
   setSyncStatus("rate", `GitHub rate limit hit on ${where} — retrying in about ${mins} minute${mins === 1 ? "" : "s"}`);
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => { if (canWrite()) pushRemote(); }, wait + 500);
+  syncTimer = setTimeout(() => { if (canWrite()) pushRemote(which || "tasks"); }, wait + 500);
 }
 
 /* ── status pill ─────────────────────────────────────────────────────── */
@@ -3033,7 +3726,8 @@ function setSyncStatus(state, detail) {
 }
 
 /* ── pull ────────────────────────────────────────────────────────────── */
-async function pullRemote() {
+async function pullRemote(which) {
+  const st = storeOf(which);
   if (!syncConfigured()) { setSyncStatus("off"); return { skipped: true }; }
   setSyncStatus("syncing");
   lastPullAt = Date.now();
@@ -3041,8 +3735,8 @@ async function pullRemote() {
     // A conditional GET costs nothing against the primary rate limit when it
     // comes back 304 and we're authorised, so re-checking is cheap.
     const headers = ghHeaders();
-    if (remoteEtag) headers["If-None-Match"] = remoteEtag;
-    const res = await fetch(contentsUrl(true), { headers, cache: "no-store" });
+    if (st.etag) headers["If-None-Match"] = st.etag;
+    const res = await fetch(contentsUrl(true, st.key), { headers, cache: "no-store" });
 
     if (res.status === 304) {                 // unchanged since we last looked
       initialPullDone = true;
@@ -3053,7 +3747,7 @@ async function pullRemote() {
     if (res.status === 404) {
       // A 404 here is ambiguous: the file may be absent, or the repo name may
       // be wrong. Ask about the repo so a typo doesn't masquerade as "all set".
-      remoteSha = null;
+      st.sha = null;
       initialPullDone = true;
       const repoRes = await fetch(
         `${GH_API}/repos/${encodeURIComponent(sync.owner)}/${encodeURIComponent(sync.repo)}`,
@@ -3064,13 +3758,13 @@ async function pullRemote() {
         setSyncStatus("error", `No repo ${sync.owner}/${sync.repo} (or it's private and the token can't see it)`);
         return { noRepo: true };
       }
-      setSyncStatus(canWrite() ? "ready" : "readonly", `${sync.path} doesn't exist yet — it'll be created on the first save`);
+      setSyncStatus(canWrite() ? "ready" : "readonly", `${st.pathOf()} doesn't exist yet — it'll be created on the first save`);
       render();
       return { missing: true };
     }
     if (res.status === 401 || res.status === 403 || res.status === 429) {
       const body = await res.text();
-      if (isRateLimited(res, body)) { noteRateLimit(res, "read"); return { error: "rate" }; }
+      if (isRateLimited(res, body)) { noteRateLimit(res, "read", st.key); return { error: "rate" }; }
       setSyncStatus("error", res.status === 401
         ? "Token rejected"
         : "Forbidden — check the token has Contents access to this repo");
@@ -3080,53 +3774,35 @@ async function pullRemote() {
 
     rateStrikes = 0;
     const j = await res.json();
-    remoteSha = j.sha || null;
-    remoteEtag = res.headers.get("etag");
+    st.sha = j.sha || null;
+    st.etag = res.headers.get("etag");
     const parsed = JSON.parse(fromB64(j.content || ""));
-    const rTasks = (Array.isArray(parsed) ? parsed : (parsed && parsed.tasks) || []).map(normalizeTask);
-    const rTombs = (parsed && parsed.tombstones) || [];
 
-    if (localIsSeed && rTasks.length) {
-      // First run on this machine: the demo list is not real data, so adopt
-      // the repo wholesale instead of merging ten fake tasks into it.
-      tasks = rTasks;
-      tombstones = rTombs;
-      localIsSeed = false;
-      try { localStorage.removeItem(SEED_KEY); } catch {}
-    } else {
-      const merged = mergeState(tasks, tombstones, rTasks, rTombs);
-      tasks = merged.tasks;
-      tombstones = merged.tombstones;
-    }
+    st.applyRemote(parsed);
 
     initialPullDone = true;
-    lastPushedFingerprint = contentFingerprint();   // local now matches remote
-    if (storageOK) {
-      try {
-        localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
-        localStorage.setItem(TOMB_KEY, JSON.stringify(tombstones));
-      } catch {}
-    }
+    st.fingerprint = st.fingerprintOf();       // local now matches remote
     render();
     setSyncStatus(canWrite() ? "synced" : "readonly");
     return { ok: true };
   } catch (err) {
-    initialPullDone = true;                   // don't wedge pushes forever
+    initialPullDone = true;                    // don't wedge pushes forever
     setSyncStatus(navigator.onLine ? "error" : "offline", String(err.message || err));
     return { error: err };
   }
 }
 
 /* ── push, with the sha as the conflict guard ────────────────────────── */
-async function pushRemote(attempt) {
+async function pushRemote(which, attempt) {
+  const st = storeOf(which);
   attempt = attempt || 0;
   if (!canWrite()) { setSyncStatus(syncConfigured() ? "readonly" : "off"); return { skipped: true }; }
-  if (syncBusy) { pushQueued = true; return { queued: true }; }
+  if (st.busy) { st.queued = true; return { queued: true }; }
 
-  // Nothing actually changed (an edit that undid itself, or a pull that
-  // already reconciled us) — don't spend a commit on it.
-  const fingerprint = contentFingerprint();
-  if (remoteSha && fingerprint === lastPushedFingerprint) {
+  // Nothing actually changed (a redundant push, or one issued right after a
+  // pull already reconciled us) — don't spend a commit on it.
+  const fingerprint = st.fingerprintOf();
+  if (st.sha && fingerprint === st.fingerprint) {
     setSyncStatus("synced", "No changes to push");
     return { ok: true, unchanged: true };
   }
@@ -3137,18 +3813,21 @@ async function pushRemote(attempt) {
     return { skipped: "rate" };
   }
 
-  syncBusy = true;
+  st.busy = true;
+  st.lastPushAt = Date.now();
   lastPushAt = Date.now();
   setSyncStatus("syncing");
   try {
+    const count = st.key === "notes" ? notes.length : tasks.length;
+    const unit = st.key === "notes" ? "note" : "item";
     const body = {
-      message: `tasks: ${tasks.length} item${tasks.length === 1 ? "" : "s"} · ${new Date().toISOString()}`,
-      content: toB64(JSON.stringify(remotePayload(), null, 2)),
+      message: `${st.label}: ${count} ${unit}${count === 1 ? "" : "s"} \u00b7 ${new Date().toISOString()}`,
+      content: toB64(JSON.stringify(st.payload(), null, 2)),
       branch: sync.branch || "main",
     };
-    if (remoteSha) body.sha = remoteSha;
+    if (st.sha) body.sha = st.sha;
 
-    const res = await fetch(contentsUrl(false), {
+    const res = await fetch(contentsUrl(false, st.key), {
       method: "PUT",
       headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
       body: JSON.stringify(body),
@@ -3156,23 +3835,25 @@ async function pushRemote(attempt) {
 
     // 409 = someone else wrote; 422 = our sha is stale or missing.
     if ((res.status === 409 || res.status === 422) && attempt < 3) {
-      syncBusy = false;
-      await pullRemote();                     // merges their changes into ours
-      return pushRemote(attempt + 1);
+      st.busy = false;
+      await pullRemote(st.key);                // merges their changes into ours
+      return pushRemote(st.key, attempt + 1);
     }
     // A brand-new repo has no commits, so its default branch isn't a real ref
     // yet and naming it 404s. Retry once letting GitHub pick the default,
     // which creates the initial commit.
     if (res.status === 404 && body.branch && attempt < 3) {
       delete body.branch;
-      const retry = await fetch(contentsUrl(false), {
+      const retry = await fetch(contentsUrl(false, st.key), {
         method: "PUT",
         headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
         body: JSON.stringify(body),
       });
       if (retry.ok) {
         const rj = await retry.json();
-        remoteSha = (rj.content && rj.content.sha) || null;
+        st.sha = (rj.content && rj.content.sha) || null;
+        st.etag = null;
+        st.fingerprint = fingerprint;
         setSyncStatus("synced");
         return { ok: true, createdDefaultBranch: true };
       }
@@ -3181,7 +3862,7 @@ async function pushRemote(attempt) {
     }
     if (res.status === 401 || res.status === 403 || res.status === 429) {
       const txt = await res.text();
-      if (isRateLimited(res, txt)) { noteRateLimit(res, "save"); return { error: "rate" }; }
+      if (isRateLimited(res, txt)) { noteRateLimit(res, "save", st.key); return { error: "rate" }; }
       setSyncStatus("error", "Token rejected or missing Contents: write on this repo");
       return { error: "auth" };
     }
@@ -3191,10 +3872,10 @@ async function pushRemote(attempt) {
     }
 
     const j = await res.json();
-    remoteSha = (j.content && j.content.sha) || null;
-    remoteEtag = null;                     // our own write invalidates it
+    st.sha = (j.content && j.content.sha) || null;
+    st.etag = null;                            // our own write invalidates it
     rateStrikes = 0;
-    lastPushedFingerprint = fingerprint;
+    st.fingerprint = fingerprint;
     setSyncStatus("synced");
 
     // The Contents API stops returning inline content somewhere around 1 MB,
@@ -3202,47 +3883,64 @@ async function pushRemote(attempt) {
     const bytes = new Blob([body.content]).size * 0.75;
     if (bytes > SIZE_WARN && !sizeWarned) {
       sizeWarned = true;
-      toast(`${sync.path} is ${Math.round(bytes / 1024)} KB. Clearing completed tasks keeps syncing fast.`, null, null, 12000);
+      toast(`${st.pathOf()} is ${Math.round(bytes / 1024)} KB. Clearing old entries keeps syncing fast.`, null, null, 12000);
     }
     return { ok: true };
   } catch (err) {
     setSyncStatus(navigator.onLine ? "error" : "offline", String(err.message || err));
     return { error: err };
   } finally {
-    syncBusy = false;
-    if (pushQueued) { pushQueued = false; scheduleSync(); }
+    st.busy = false;
+    if (st.queued) { st.queued = false; scheduleSync(st.key); }
   }
 }
 
-/* ── debounce: one push a few seconds after the last edit ─────────────── */
-function scheduleSync() {
+/* ── pacing: settle after the last edit, but never commit too often ───── */
+function scheduleSync(which) {
+  const st = storeOf(which);
   if (!canWrite() || !sync.auto || !initialPullDone) return;
-  clearTimeout(syncTimer);
+  clearTimeout(st.timer);
   setSyncStatus("pending");
-  const sinceLast = Date.now() - lastPushAt;
+  const sinceLast = Date.now() - st.lastPushAt;
   const wait = Math.max(
     PUSH_DEBOUNCE,                          // let a burst of edits settle
     MIN_PUSH_GAP - sinceLast,               // and cap the commit rate
     rateLimitedUntil - Date.now()           // plus any backoff we owe
   );
-  syncTimer = setTimeout(() => pushRemote(), wait);
+  st.timer = setTimeout(() => pushRemote(st.key), wait);
+}
+
+/** Anything queued but not yet written, across every file. */
+function pendingStores() {
+  return Object.values(stores).filter(st => st.sha === null || st.fingerprintOf() !== st.fingerprint);
+}
+function flushAll() {
+  Object.values(stores).forEach(st => {
+    clearTimeout(st.timer);
+    if (st.fingerprintOf() !== st.fingerprint) pushRemote(st.key);
+  });
+}
+async function pullAll() {
+  const a = await pullRemote("tasks");
+  const b = await pullRemote("notes");
+  return { tasks: a, notes: b };
 }
 
 window.addEventListener("online", () => {
-  if (syncConfigured() && (syncState === "offline" || syncState === "error")) pullRemote().then(() => scheduleSync());
+  if (syncConfigured() && (syncState === "offline" || syncState === "error")) pullAll().then(() => flushAll());
 });
 // Best-effort flush if the tab closes with an edit still queued.
 window.addEventListener("beforeunload", () => {
-  if (canWrite() && syncState === "pending") { clearTimeout(syncTimer); pushRemote(); }
+  if (canWrite() && syncState === "pending") flushAll();
 });
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     // Far more reliable than beforeunload on mobile, where tabs are frozen
     // rather than unloaded.
-    if (canWrite() && syncState === "pending") { clearTimeout(syncTimer); pushRemote(); }
+    if (canWrite() && syncState === "pending") flushAll();
   } else if (syncConfigured() && Date.now() - lastPullAt > 30000) {
-    pullRemote();          // cheap: a 304 costs nothing when authorised
+    pullAll();             // cheap: a 304 costs nothing when authorised
   }
 });
 
@@ -3253,6 +3951,7 @@ const syncFields = {
   repo:   document.getElementById("sync-repo"),
   branch: document.getElementById("sync-branch"),
   path:   document.getElementById("sync-path"),
+  notesPath: document.getElementById("sync-notes-path"),
   token:  document.getElementById("sync-token"),
 };
 
@@ -3261,6 +3960,7 @@ function fillSyncForm() {
   syncFields.repo.value   = sync.repo || "";
   syncFields.branch.value = sync.branch || "main";
   syncFields.path.value   = sync.path || "data.json";
+  syncFields.notesPath.value = sync.notesPath || "notes.json";
   syncFields.token.value  = sync.token || "";
 }
 
@@ -3280,6 +3980,7 @@ document.getElementById("sync-save").addEventListener("click", async () => {
   sync.repo   = syncFields.repo.value.trim().replace(/\.git$/, "");
   sync.branch = syncFields.branch.value.trim() || "main";
   sync.path   = syncFields.path.value.trim() || "data.json";
+  sync.notesPath = syncFields.notesPath.value.trim() || "notes.json";
   sync.token  = syncFields.token.value.trim();
 
   if (!sync.owner || !sync.repo) { toast("Owner and repo are both required."); return; }
@@ -3288,7 +3989,8 @@ document.getElementById("sync-save").addEventListener("click", async () => {
     // The token lives under its own key so an accidental copy of the config
     // (or an export) can never carry it along.
     localStorage.setItem(SYNC_KEY, JSON.stringify({
-      owner: sync.owner, repo: sync.repo, branch: sync.branch, path: sync.path, auto: true,
+      owner: sync.owner, repo: sync.repo, branch: sync.branch,
+      path: sync.path, notesPath: sync.notesPath, auto: true,
     }));
     if (sync.token) localStorage.setItem(TOKEN_KEY, sync.token);
     else localStorage.removeItem(TOKEN_KEY);
@@ -3306,10 +4008,13 @@ document.getElementById("sync-save").addEventListener("click", async () => {
   }
 
   initialPullDone = false;
-  const r = await pullRemote();
-  if (r && r.missing && canWrite()) {
-    await pushRemote();                       // create data.json on first connect
-    toast("Connected — created " + sync.path);
+  const r = await pullRemote("tasks");
+  const rn = await pullRemote("notes");
+  if (canWrite() && (r && r.missing || rn && rn.missing)) {
+    // Create whichever file isn't there yet.
+    if (r && r.missing) await pushRemote("tasks");
+    if (rn && rn.missing) await pushRemote("notes");
+    toast("Connected — set up " + sync.path + " and " + sync.notesPath);
   } else if (r && r.ok) {
     toast(canWrite() ? "Connected and synced." : "Connected (read-only — no token).");
   } else if (r && r.noRepo) {
@@ -3324,27 +4029,33 @@ document.getElementById("sync-save").addEventListener("click", async () => {
 
 document.getElementById("sync-pull").addEventListener("click", async () => {
   if (!syncConfigured()) { toast("Set up sync first."); return; }
-  const r = await pullRemote();
-  toast(r && r.ok ? "Pulled from GitHub." : r && r.missing ? "No data.json there yet." : "Pull failed.");
+  const r = await pullAll();
+  const okAny = (r.tasks && r.tasks.ok) || (r.notes && r.notes.ok);
+  toast(okAny ? "Pulled tasks and notes from GitHub." : "Pull failed \u2014 see the status pill.");
 });
 
 document.getElementById("sync-push").addEventListener("click", async () => {
   if (!canWrite()) { toast("A token with Contents: write is needed to save."); return; }
-  clearTimeout(syncTimer);
-  const r = await pushRemote();
-  toast(r && r.ok ? "Pushed to GitHub." : "Push failed — see the status pill.");
+  const a = await pushRemote("tasks");
+  const b = await pushRemote("notes");
+  const bad = (a && a.error) || (b && b.error);
+  toast(bad ? "Push failed \u2014 see the status pill." : "Pushed tasks and notes to GitHub.");
 });
 
 document.getElementById("sync-forget").addEventListener("click", async () => {
   const yes = await confirmAction({
     title: "Disconnect sync?",
-    message: "Your tasks stay in this browser and the repo keeps its copy. The token is removed from this browser.",
+    message: "Your tasks and notes stay in this browser and the repo keeps its copy. The token is removed from this browser.",
     confirmLabel: "Disconnect",
   });
   if (!yes) return;
   try { localStorage.removeItem(SYNC_KEY); localStorage.removeItem(TOKEN_KEY); } catch {}
-  sync = { owner: "", repo: "", branch: "main", path: "data.json", token: "", auto: true };
-  remoteSha = null;
+  sync = { owner: "", repo: "", branch: "main", path: "data.json",
+           notesPath: "notes.json", token: "", auto: true };
+  Object.values(stores).forEach(st => {
+    st.sha = null; st.etag = null; st.fingerprint = null;
+    clearTimeout(st.timer);
+  });
   clearTimeout(syncTimer);
   fillSyncForm();
   setSyncStatus("off");
@@ -3376,7 +4087,7 @@ render();
 fillSyncForm();
 if (syncConfigured()) {
   setSyncStatus(canWrite() ? "ready" : "readonly");
-  pullRemote();                 // adopt whatever the repo already holds
+  pullAll();                    // adopt whatever the repo already holds
 } else {
   setSyncStatus("off");
   initialPullDone = true;       // purely local until sync is configured
