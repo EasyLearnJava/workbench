@@ -1,0 +1,3386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Tasks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       DESIGN TOKENS — chunky / neo-brutalist
+       Every component rule reads from these; no literal colors below.
+       ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      /* surfaces */
+      --bg:         #FBF0DC;
+      --surface:    #FFFAF0;
+      --surface-2:  #F4E8CE;
+      --sunken:     #E5D6B4;
+      --tan:        #E0D2B0;
+
+      /* ink */
+      --text:       #241C15;
+      --text-dim:   #7A6853;
+      --line:       #241C15;   /* borders + hard shadows */
+
+      /* accents */
+      /* Accent fills. Shades are picked so the paired --on-* text clears
+         WCAG AA 4.5:1; --on-orange-lg is cream and is only used for the
+         large display heading on the brand banner (AA large = 3:1). */
+      --orange:     #DE6430;
+      --blue:       #3576BC;
+      --green:      #4FB56A;
+      --red:        #C2463B;
+      --yellow:     #EFAF3A;
+
+      --on-orange:    #241C15;
+      --on-orange-lg: #FFF6EC;
+      --on-blue:      #FFFFFF;
+      --on-green:     #16280F;
+      --on-red:       #FFF4F1;
+      --on-yellow:    #2A1E06;
+
+      /* structure */
+      --bd:         3px;
+      --bd-thin:    2px;
+      --r:          18px;
+      --r-sm:       11px;
+      --r-pill:     999px;
+      --sh:         5px 5px 0 var(--line);
+      --sh-sm:      3px 3px 0 var(--line);
+      --sh-lg:      7px 7px 0 var(--line);
+      --press:      2px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:        #17130E;
+        --surface:   #2A231B;
+        --surface-2: #362D23;
+        --sunken:    #1E1913;
+        --tan:       #3E3427;
+
+        --text:      #F5EADA;
+        --text-dim:  #A99884;
+        --line:      #0C0906;
+
+        --orange:    #DE6430;
+        --blue:      #3576BC;
+        --green:     #4FB56A;
+        --red:       #C2463B;
+        --yellow:    #EFAF3A;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg:        #17130E;
+      --surface:   #2A231B;
+      --surface-2: #362D23;
+      --sunken:    #1E1913;
+      --tan:       #3E3427;
+
+      --text:      #F5EADA;
+      --text-dim:  #A99884;
+      --line:      #0C0906;
+
+      --orange:    #DE6430;
+      --blue:      #3576BC;
+      --green:     #4FB56A;
+      --red:       #C2463B;
+      --yellow:    #EFAF3A;
+    }
+
+    /* ═══ Base ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Baloo 2", "Nunito", "Quicksand", -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.45;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 28px 18px 90px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    :focus-visible {
+      outline: var(--bd) solid var(--blue);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* Anything that contains an .sr-only label must be a positioned ancestor,
+       or the label anchors to the viewport and escapes its scroll container. */
+    .task-item, .kb-card, .kb-cards, .add-card, .task-body, .kb-card-body { position: relative; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    /* ═══ Shell ══════════════════════════════════════════════════════════ */
+    .app-shell {
+      display: flex;
+      align-items: flex-start;
+      gap: 26px;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    body.kanban-mode .app-shell { max-width: 1460px; }
+
+    .sidebar {
+      width: 316px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 8px 8px 4px;
+      margin: -4px -8px -8px -4px;
+      scrollbar-width: thin;
+    }
+
+    .main { flex: 1; min-width: 0; max-width: 540px; }
+    body.kanban-mode .main { max-width: 1100px; }
+
+    /* ═══ Shared block: bordered card ════════════════════════════════════ */
+    .block {
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      background: var(--surface);
+    }
+
+    /* ═══ Brand banner (orange) ══════════════════════════════════════════ */
+    .brand {
+      background: var(--orange);
+      color: var(--on-orange-lg);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      line-height: 1.15;
+    }
+    .brand-date {
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(0,0,0,.26);
+      border-radius: var(--r-pill);
+      padding: 2px 9px;
+      white-space: nowrap;
+    }
+
+    /* ═══ Stat card (blue) ═══════════════════════════════════════════════ */
+    .statcard {
+      background: var(--blue);
+      color: var(--on-blue);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .statcard-copy { flex: 1; min-width: 0; }
+    .statcard-title { font-size: 15px; font-weight: 700; line-height: 1.2; }
+    .statcard-big { font-size: 30px; font-weight: 800; line-height: 1.05; margin-top: 1px; }
+    .statcard-sub { font-size: 12px; font-weight: 600; opacity: .95; margin-top: 2px; }
+
+    .ring { flex-shrink: 0; }
+    .ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+    .ring .ring-track { stroke: currentColor; opacity: .3; }
+    .ring .ring-fill  { stroke: currentColor; transition: stroke-dashoffset .45s ease; }
+    .ring text { font-size: 17px; font-weight: 800; fill: currentColor; }
+
+    /* ═══ Section label ══════════════════════════════════════════════════ */
+    .side-label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding-left: 4px;
+      margin-bottom: -6px;
+    }
+
+    /* ═══ Add card ═══════════════════════════════════════════════════════ */
+    .add-card {
+      background: var(--surface);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    textarea#new-task {
+      width: 100%;
+      padding: 11px 13px;
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+      outline-offset: 1px;
+      resize: vertical;
+      overflow-y: auto;
+      min-height: 128px;   /* ≈ 5 lines */
+      max-height: 340px;
+    }
+    textarea#new-task::placeholder { color: var(--text-dim); font-weight: 500; }
+    textarea#new-task:focus { background: var(--surface); }
+
+    .hint { font-size: 11.5px; font-weight: 600; color: var(--text-dim); }
+    .hint kbd {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--sunken);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 5px;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 8px 11px;
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+    :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+    :root:not([data-theme="light"]) input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.85); }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }
+    }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ═══ Buttons ════════════════════════════════════════════════════════ */
+    .btn {
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      box-shadow: var(--sh-sm);
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: transform .06s, box-shadow .06s, background .12s;
+      line-height: 1.25;
+    }
+    .btn:hover { background: var(--sunken); }
+    .btn:active { transform: translate(var(--press), var(--press)); box-shadow: none; }
+
+    .btn--green  { background: var(--green);  color: var(--on-green); }
+    .btn--green:hover  { background: var(--green);  filter: brightness(1.06); }
+    .btn--orange { background: var(--orange); color: var(--on-orange); }
+    .btn--orange:hover { background: var(--orange); filter: brightness(1.06); }
+    .btn--red    { background: var(--red);    color: var(--on-red); }
+    .btn--red:hover    { background: var(--red);    filter: brightness(1.06); }
+    .btn--blue   { background: var(--blue);   color: var(--on-blue); }
+    .btn--blue:hover   { background: var(--blue);   filter: brightness(1.06); }
+
+    .btn--block { width: 100%; display: block; }
+    .btn--lg { font-size: 16px; padding: 12px 16px; box-shadow: var(--sh); }
+    .btn--sm { font-size: 12px; padding: 5px 10px; border-width: var(--bd-thin); box-shadow: 2px 2px 0 var(--line); }
+
+    /* pill toggle chips (quick dates, priority, tags) */
+    .chip {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .06s, background .12s, color .12s;
+    }
+    .chip:hover { background: var(--sunken); }
+    .chip:active { transform: translateY(1px); }
+    .chip[aria-pressed="true"] { background: var(--orange); color: var(--on-orange); }
+    .chip--p1[aria-pressed="true"] { background: var(--blue);   color: var(--on-blue); }
+    .chip--p2[aria-pressed="true"] { background: var(--yellow); color: var(--on-yellow); }
+    .chip--p3[aria-pressed="true"] { background: var(--red);    color: var(--on-red); }
+
+    /* icon button */
+    .iconbtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px; height: 34px;
+      flex-shrink: 0;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 9px;
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--line);
+      transition: transform .06s, box-shadow .06s, background .12s;
+    }
+    .iconbtn:hover { background: var(--sunken); }
+    .iconbtn:active { transform: translate(2px, 2px); box-shadow: none; }
+    .iconbtn--danger:hover { background: var(--red); color: var(--on-red); }
+
+    /* ═══ Top bar ════════════════════════════════════════════════════════ */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .topbar-title { font-size: 22px; font-weight: 800; margin-right: auto; }
+
+    /* ═══ Search ═════════════════════════════════════════════════════════ */
+    .searchwrap { position: relative; margin-bottom: 12px; }
+    .searchwrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+    #search {
+      width: 100%;
+      padding: 10px 40px 10px 38px;
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      box-shadow: var(--sh-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #search::placeholder { color: var(--text-dim); font-weight: 500; }
+    #search-clear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 26px; height: 26px; display: none;
+      border: none; background: var(--sunken); color: var(--text);
+      border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 15px; line-height: 1;
+      font-family: inherit;
+    }
+    #search-clear.visible { display: block; }
+
+    /* ═══ Filter bar ═════════════════════════════════════════════════════ */
+    .toolbar { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .filter-btn {
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--line);
+      transition: transform .06s, box-shadow .06s, background .12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .filter-btn:hover { background: var(--sunken); }
+    .filter-btn:active { transform: translate(2px,2px); box-shadow: none; }
+    .filter-btn[aria-pressed="true"] { background: var(--orange); color: var(--on-orange); }
+    .filter-btn .cnt {
+      font-size: 10.5px;
+      font-weight: 800;
+      background: var(--sunken);
+      color: var(--text);
+      border-radius: var(--r-pill);
+      padding: 0 5px;
+      min-width: 17px;
+      text-align: center;
+    }
+    .filter-btn[aria-pressed="true"] .cnt { background: var(--surface); color: var(--text); }
+
+    .sort-select {
+      margin-left: auto;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 2px 2px 0 var(--line);
+      cursor: pointer;
+    }
+
+    /* active tag filter pill */
+    #tag-filter-bar { display: none; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 700; }
+    #tag-filter-bar.visible { display: flex; }
+
+    /* ═══ View tabs (mirrors the reference's Goals / History tabs) ═══════ */
+    .tabs { display: flex; gap: 6px; align-items: flex-end; margin-bottom: -3px; padding-left: 4px; position: relative; z-index: 2; }
+    .tab {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 18px 11px;
+      border: var(--bd) solid var(--line);
+      border-bottom: none;
+      border-radius: 13px 13px 0 0;
+      background: var(--tan);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background .12s, transform .06s;
+    }
+    .tab:hover { filter: brightness(1.04); }
+    .tab[aria-selected="true"] { background: var(--surface); padding-bottom: 13px; }
+
+    .tabpanel {
+      border: var(--bd) solid var(--line);
+      border-radius: 0 var(--r) var(--r) var(--r);
+      background: var(--surface);
+      box-shadow: var(--sh);
+      padding: 12px;
+      min-height: 180px;
+    }
+
+    /* ═══ Overdue banner ═════════════════════════════════════════════════ */
+    #overdue-banner {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      box-shadow: var(--sh-sm);
+      background: var(--red);
+      color: var(--on-red);
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+    #overdue-banner.visible { display: flex; }
+    #overdue-banner button { margin-left: auto; }
+
+    /* ═══ Task list ══════════════════════════════════════════════════════ */
+    #task-list { display: flex; flex-direction: column; gap: 10px; list-style: none; }
+
+    .task-item {
+      background: var(--surface-2);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      box-shadow: var(--sh-sm);
+      overflow: hidden;
+    }
+    .task-item.is-new, .kb-card.is-new { animation: pop .18s ease; }
+    .task-item.dragging { opacity: .45; }
+    .task-item.drop-before { box-shadow: 0 -6px 0 -2px var(--orange), var(--sh-sm); }
+    .task-item.drop-after  { box-shadow: 0  6px 0 -2px var(--orange), var(--sh-sm); }
+    .task-item.done { background: var(--surface); }
+    .task-item.done .task-text { color: var(--text-dim); text-decoration: line-through; }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(-6px) scale(.98); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* priority stripe */
+    .task-item { border-left-width: var(--bd); }
+    .task-item.p1 { border-left: 9px solid var(--blue); }
+    .task-item.p2 { border-left: 9px solid var(--yellow); }
+    .task-item.p3 { border-left: 9px solid var(--red); }
+
+    .task-main { display: flex; align-items: flex-start; gap: 11px; padding: 11px 12px; }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--text-dim);
+      padding-top: 3px;
+      line-height: 0;
+      flex-shrink: 0;
+      touch-action: none;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* checkbox */
+    .cb-wrap { position: relative; width: 26px; height: 26px; flex-shrink: 0; }
+    .cb-wrap input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+    .cb-box {
+      display: flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      border: var(--bd) solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      pointer-events: none;
+      transition: background .15s, transform .15s;
+    }
+    .cb-wrap input:checked ~ .cb-box { background: var(--green); }
+    .cb-wrap input:focus-visible ~ .cb-box { outline: var(--bd) solid var(--blue); outline-offset: 2px; }
+    .cb-box svg { opacity: 0; transform: scale(.4); transition: opacity .15s, transform .22s cubic-bezier(.34,1.56,.64,1); color: var(--on-green); }
+    .cb-wrap input:checked ~ .cb-box svg { opacity: 1; transform: scale(1); }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-text {
+      font-size: 14.5px;
+      font-weight: 600;
+      word-break: break-word;
+      white-space: pre-wrap;
+      cursor: text;
+      border-radius: 5px;
+      padding: 1px 3px;
+      margin: -1px -3px;
+    }
+    .task-text:hover { background: var(--sunken); }
+    .task-text mark {
+      background: var(--yellow);
+      color: var(--on-yellow);
+      border-radius: 3px;
+      padding: 0 1px;
+    }
+    .task-tag {
+      display: inline-block;
+      background: var(--blue);
+      color: var(--on-blue);
+      border: none;
+      border-radius: var(--r-pill);
+      padding: 0 7px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: inherit;
+      text-decoration: none;
+      vertical-align: baseline;
+      cursor: pointer;
+    }
+    .task-tag:hover { filter: brightness(1.1); }
+
+    .task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .badge.overdue   { background: var(--red);    color: var(--on-red); }
+    .badge.soon      { background: var(--yellow); color: var(--on-yellow); }
+    .badge.ok        { background: var(--green);  color: var(--on-green); }
+    .badge.done-badge{ background: var(--tan);    color: var(--text); }
+    .badge.prio1     { background: var(--blue);   color: var(--on-blue); }
+    .badge.prio2     { background: var(--yellow); color: var(--on-yellow); }
+    .badge.prio3     { background: var(--red);    color: var(--on-red); }
+
+    .task-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+    /* due progress bar — matches the reference's knobbed bar */
+    .due-progress {
+      position: relative;
+      height: 12px;
+      margin: 0 12px 11px;
+      background: var(--sunken);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      overflow: hidden;
+    }
+    .due-progress-fill {
+      height: 100%;
+      border-radius: var(--r-pill);
+      transition: width .45s ease;
+    }
+    .due-progress-fill.overdue { background: var(--red); }
+    .due-progress-fill.soon    { background: var(--yellow); }
+    .due-progress-fill.ok      { background: var(--green); }
+
+    /* inline editors */
+    .text-edit-input, .inline-date-input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 7px 9px;
+      border: var(--bd) solid var(--orange);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      overflow-y: auto;
+      max-height: 220px;
+      white-space: pre-wrap;
+    }
+    .inline-date-input { display: none; margin-top: 7px; cursor: pointer; max-width: 190px; }
+
+    /* inline edit panel (text + priority + save/cancel) */
+    .task-edit { display: flex; flex-direction: column; gap: 8px; }
+    .task-edit-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .task-edit-row .field-label { margin: 0 2px 0 0; }
+    .task-edit-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .task-edit-actions .edit-hint { margin: 0 0 0 auto; text-align: right; }
+    .inline-date-input.visible { display: block; }
+    .edit-hint { display: block; font-size: 10.5px; font-weight: 600; color: var(--text-dim); margin-top: 4px; }
+
+    /* status select on cards (keyboard + touch friendly) */
+    .status-select {
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* ═══ Empty state ════════════════════════════════════════════════════ */
+    #empty-state { display: none; text-align: center; padding: 34px 12px; }
+    #empty-state.visible { display: block; }
+    .empty-emoji { font-size: 40px; line-height: 1; }
+    .empty-title { font-size: 17px; font-weight: 800; margin-top: 8px; }
+    .empty-sub { font-size: 13px; font-weight: 600; color: var(--text-dim); margin-top: 3px; overflow-wrap: anywhere; }
+
+    #list-more {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface-2);
+      box-shadow: var(--sh-sm);
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    #list-more.visible { display: flex; }
+    #list-more button { margin-left: auto; }
+
+    /* ═══ Stats footer ═══════════════════════════════════════════════════ */
+    .stats {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+    }
+    .stats #clear-done { margin-left: auto; }
+
+    /* ═══ Kanban ═════════════════════════════════════════════════════════ */
+    #kanban-board { display: none; position: relative; gap: 12px; align-items: flex-start; width: 100%; }
+    /* Always a scroller: below ~880px of board width four columns would be
+       unreadable slivers, so let it scroll sideways instead of squeezing. */
+    #kanban-board.visible { display: flex; overflow-x: auto; padding-bottom: 6px; }
+    body.kanban-mode #task-list, body.kanban-mode #empty-state { display: none; }
+
+    .kb-column {
+      flex: 1 0 205px;
+      min-width: 205px;
+      background: var(--surface-2);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      box-shadow: var(--sh-sm);
+      display: flex;
+      flex-direction: column;
+      min-height: 180px;
+    }
+
+    .kb-column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 9px 12px;
+      border-bottom: var(--bd) solid var(--line);
+      font-weight: 800;
+      font-size: 13.5px;
+      border-radius: 8px 8px 0 0;
+    }
+    .kb-column[data-status="past-due"]    .kb-column-header { background: var(--red);    color: var(--on-red); }
+    .kb-column[data-status="todo"]        .kb-column-header { background: var(--blue);   color: var(--on-blue); }
+    .kb-column[data-status="in-progress"] .kb-column-header { background: var(--yellow); color: var(--on-yellow); }
+    .kb-column[data-status="done"]        .kb-column-header { background: var(--green);  color: var(--on-green); }
+
+    .kb-count {
+      font-size: 11px;
+      font-weight: 800;
+      background: var(--surface);
+      color: var(--text);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      padding: 0 7px;
+      min-width: 21px;
+      text-align: center;
+    }
+
+    .kb-cards { padding: 9px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 70px; transition: background .12s; }
+    .kb-cards.drag-over { background: var(--sunken); }
+
+    .kb-card {
+      background: var(--surface);
+      border: var(--bd) solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--sh-sm);
+      overflow: hidden;
+    }
+    .kb-card.dragging { opacity: .4; }
+    .kb-card.p1 { border-left: 9px solid var(--blue); }
+    .kb-card.p2 { border-left: 9px solid var(--yellow); }
+    .kb-card.p3 { border-left: 9px solid var(--red); }
+
+    .kb-card-body { padding: 9px 11px; }
+    .kb-card-top { display: flex; align-items: flex-start; gap: 7px; }
+    .kb-card-text { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; word-break: break-word; white-space: pre-wrap; line-height: 1.4; cursor: text; border-radius: 5px; }
+    .kb-card-text:hover { background: var(--sunken); }
+    .kb-card.done .kb-card-text { color: var(--text-dim); text-decoration: line-through; }
+    .kb-card-meta { margin-top: 7px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .kb-card-actions { display: flex; gap: 4px; margin-left: auto; }
+    .kb-grip { cursor: grab; color: var(--text-dim); line-height: 0; padding-top: 2px; }
+
+    .kb-col-footer {
+      padding: 7px 11px;
+      border-top: var(--bd) solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .kb-empty { text-align: center; color: var(--text-dim); font-size: 12.5px; font-weight: 700; padding: 18px 8px; }
+
+    /* ═══ Toast ══════════════════════════════════════════════════════════ */
+    #toast-host {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      pointer-events: none;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+    }
+    .toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r-sm);
+      box-shadow: var(--sh);
+      padding: 10px 12px 10px 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      animation: toastIn .2s ease;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+    /* ═══ Modal ══════════════════════════════════════════════════════════ */
+    .overlay {
+      position: fixed; inset: 0; z-index: 70;
+      background: rgba(20,14,8,.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: var(--bd) solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--sh-lg);
+      padding: 20px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal h2 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+    .kbd-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13.5px; font-weight: 600; }
+    .kbd-row kbd {
+      font-family: inherit; font-size: 12px; font-weight: 800;
+      background: var(--surface-2);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 6px;
+      padding: 2px 7px;
+      min-width: 30px;
+      text-align: center;
+      box-shadow: 2px 2px 0 var(--line);
+    }
+    .kbd-row span { color: var(--text-dim); }
+
+    .modal p { font-size: 14.5px; font-weight: 600; margin-bottom: 6px; }
+    .modal-quote {
+      font-size: 14px;
+      font-weight: 700;
+      background: var(--surface-2);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      margin: 10px 0 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 130px;
+      overflow-y: auto;
+    }
+    .modal-actions { display: flex; gap: 8px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* ═══ Sync panel ═══ */
+    .sync-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+    .sync-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: var(--r-pill);
+      white-space: nowrap;
+    }
+    .sync-pill.off  { background: var(--surface-2); color: var(--text-dim); }
+    .sync-pill.ok   { background: var(--green);  color: var(--on-green); }
+    .sync-pill.busy { background: var(--blue);   color: var(--on-blue); }
+    .sync-pill.warn { background: var(--yellow); color: var(--on-yellow); }
+    .sync-pill.bad  { background: var(--red);    color: var(--on-red); }
+
+    .sync-body { display: none; flex-direction: column; gap: 9px; }
+    .sync-body.open { display: flex; }
+
+    .sync-body input[type="text"], .sync-body input[type="password"] {
+      width: 100%;
+      padding: 7px 10px;
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .sync-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .sync-note {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+    .sync-note a { color: inherit; }
+    .sync-warn {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: var(--yellow);
+      color: var(--on-yellow);
+      border: var(--bd-thin) solid var(--line);
+      border-radius: 8px;
+      padding: 7px 9px;
+      line-height: 1.4;
+    }
+
+    /* ═══ Confetti ═══════════════════════════════════════════════════════ */
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 80; overflow: hidden; }
+    .confetti-bit {
+      position: absolute;
+      width: 11px; height: 15px;
+      border: 2px solid var(--line);
+      border-radius: 3px;
+      animation: fall 2.4s cubic-bezier(.3,.6,.5,1) forwards;
+    }
+    @keyframes fall {
+      from { transform: translateY(-24px) rotate(0deg); opacity: 1; }
+      to   { transform: translateY(105vh) rotate(680deg); opacity: 0; }
+    }
+
+    /* ═══ Motion / responsive ════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+      #confetti { display: none; }
+    }
+
+    @media (max-width: 940px) {
+      body { padding: 18px 12px 90px; }
+      .app-shell, body.kanban-mode .app-shell { flex-direction: column; max-width: 620px; }
+      .sidebar { width: 100%; position: static; max-height: none; overflow: visible; }
+      .main, body.kanban-mode .main { max-width: 100%; width: 100%; }
+      textarea#new-task { min-height: 128px; }
+      /* one column at a time, snapped, on a phone */
+      #kanban-board.visible { scroll-snap-type: x mandatory; }
+      .kb-column { flex: 0 0 78%; min-width: 0; scroll-snap-align: start; }
+    }
+
+    @media (max-width: 560px) {
+      .brand h1 { font-size: 22px; }
+      .statcard-big { font-size: 26px; }
+      .tabpanel { padding: 9px; }
+      .kb-column { flex: 0 0 86%; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ══ Left nav ══════════════════════════════════════════════════ -->
+    <aside class="sidebar" aria-label="Add task and summary">
+      <div class="brand">
+        <h1>My Tasks</h1>
+        <div class="brand-date" id="date-label"></div>
+      </div>
+
+      <div class="statcard">
+        <div class="statcard-copy">
+          <div class="statcard-title">Active Tasks</div>
+          <div class="statcard-big" id="stat-active">0</div>
+          <div class="statcard-sub" id="stat-sub">nothing due</div>
+        </div>
+        <svg class="ring" width="66" height="66" viewBox="0 0 66 66" aria-hidden="true">
+          <circle class="ring-track" cx="33" cy="33" r="27"></circle>
+          <circle class="ring-fill" id="ring-fill" cx="33" cy="33" r="27"
+                  transform="rotate(-90 33 33)" stroke-dasharray="169.6" stroke-dashoffset="169.6"></circle>
+          <text id="ring-label" x="33" y="39" text-anchor="middle">0%</text>
+        </svg>
+      </div>
+
+      <div class="side-label">＋ New task</div>
+      <div class="add-card">
+        <div>
+          <label class="sr-only" for="new-task">New task text</label>
+          <textarea id="new-task" rows="5" maxlength="500"
+            placeholder="What needs doing?&#10;&#10;Tip: type #work or #home to tag it"></textarea>
+        </div>
+        <div class="hint"><kbd>Enter</kbd> to add · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> for a new line</div>
+
+        <div>
+          <span class="field-label" id="prio-label">Priority</span>
+          <div class="chip-row" role="group" aria-labelledby="prio-label">
+            <button type="button" class="chip chip--p0" data-prio="0" aria-pressed="true">None</button>
+            <button type="button" class="chip chip--p1" data-prio="1" aria-pressed="false">Low</button>
+            <button type="button" class="chip chip--p2" data-prio="2" aria-pressed="false">Med</button>
+            <button type="button" class="chip chip--p3" data-prio="3" aria-pressed="false">High</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="new-due">📅 Due date</label>
+          <input id="new-due" type="date" />
+          <div class="chip-row" style="margin-top:7px" role="group" aria-label="Quick due dates">
+            <button type="button" class="chip qd-btn" data-days="0" aria-pressed="false">Today</button>
+            <button type="button" class="chip qd-btn" data-days="1" aria-pressed="false">Tomorrow</button>
+            <button type="button" class="chip qd-btn" data-days="7" aria-pressed="false">+1 week</button>
+            <button type="button" class="chip qd-btn" data-days="30" aria-pressed="false">+1 month</button>
+          </div>
+        </div>
+
+        <button class="btn btn--green btn--block btn--lg" id="add-btn">+ Add Task</button>
+      </div>
+
+      <div class="side-label">Sync</div>
+      <div class="add-card" style="gap:9px">
+        <div class="sync-head">
+          <span id="sync-status" class="sync-pill off">Not connected</span>
+          <button class="btn btn--sm" id="sync-toggle" aria-expanded="false" aria-controls="sync-body">Set up</button>
+        </div>
+
+        <div class="sync-body" id="sync-body">
+          <div class="sync-note">
+            Stores your tasks in <strong>data.json</strong> in a GitHub repo, so any
+            browser on any machine sees the same list. Reading a public repo needs
+            no token — only saving does.
+          </div>
+          <div class="sync-grid">
+            <div>
+              <label class="field-label" for="sync-owner">Owner</label>
+              <input id="sync-owner" type="text" placeholder="your-username" autocomplete="off" spellcheck="false" />
+            </div>
+            <div>
+              <label class="field-label" for="sync-repo">Repo</label>
+              <input id="sync-repo" type="text" placeholder="todo-data" autocomplete="off" spellcheck="false" />
+            </div>
+            <div>
+              <label class="field-label" for="sync-branch">Branch</label>
+              <input id="sync-branch" type="text" placeholder="main" autocomplete="off" spellcheck="false" />
+            </div>
+            <div>
+              <label class="field-label" for="sync-path">File</label>
+              <input id="sync-path" type="text" placeholder="data.json" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="sync-token">Token (only needed to save)</label>
+            <input id="sync-token" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false" />
+          </div>
+
+          <div class="sync-warn">
+            A <strong>public</strong> repo means anyone can read your tasks, and git
+            history keeps them even after you delete. Use a fine-grained token limited
+            to this one repo with <strong>Contents: Read and write</strong>. It is kept
+            only in this browser and is never included in an export.
+          </div>
+
+          <div class="chip-row">
+            <button class="btn btn--sm btn--green" id="sync-save">Connect</button>
+            <button class="btn btn--sm" id="sync-pull">Pull now</button>
+            <button class="btn btn--sm" id="sync-push">Push now</button>
+            <button class="btn btn--sm btn--red" id="sync-forget">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-label">Data</div>
+      <div class="add-card" style="gap:8px">
+        <div class="chip-row">
+          <button class="btn btn--sm" id="export-btn">⬇ Export</button>
+          <button class="btn btn--sm" id="import-btn">⬆ Import</button>
+          <button class="btn btn--sm" id="help-btn">⌨ Shortcuts</button>
+        </div>
+        <!-- Driven by #import-btn. .sr-only keeps it rendered (and therefore
+             focusable), so take it out of the tab order explicitly. -->
+        <input type="file" id="import-file" accept="application/json,.json"
+               class="sr-only" tabindex="-1" aria-hidden="true" />
+      </div>
+    </aside>
+
+    <!-- ══ Main ══════════════════════════════════════════════════════ -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-title" id="greeting">Today</div>
+        <button class="iconbtn" id="theme-btn" title="Switch theme" aria-label="Switch theme"></button>
+      </div>
+
+      <div id="overdue-banner" role="status">
+        <span id="overdue-text"></span>
+        <button class="btn btn--sm" id="overdue-jump">Show them</button>
+      </div>
+
+      <div class="searchwrap">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="2.2"/>
+          <path d="M11 11l4 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <label class="sr-only" for="search">Search tasks</label>
+        <input id="search" type="search" placeholder="Search tasks…   (press / )" autocomplete="off" />
+        <button id="search-clear" aria-label="Clear search">×</button>
+      </div>
+
+      <div id="tag-filter-bar">
+        <span>Filtered by tag</span>
+        <span class="badge prio1" id="tag-filter-name"></span>
+        <button class="btn btn--sm" id="tag-filter-clear">Clear</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="Filter tasks">
+          <button class="filter-btn" data-filter="all"     aria-pressed="true">All <span class="cnt"></span></button>
+          <button class="filter-btn" data-filter="active"  aria-pressed="false">Active <span class="cnt"></span></button>
+          <button class="filter-btn" data-filter="done"    aria-pressed="false">Done <span class="cnt"></span></button>
+          <button class="filter-btn" data-filter="overdue" aria-pressed="false">Overdue <span class="cnt"></span></button>
+          <button class="filter-btn" data-filter="soon"    aria-pressed="false">Soon <span class="cnt"></span></button>
+        </div>
+        <label class="sr-only" for="sort-select">Sort order</label>
+        <select class="sort-select" id="sort-select">
+          <option value="created">Sort: Added</option>
+          <option value="due">Sort: Due date</option>
+          <option value="priority">Sort: Priority</option>
+          <option value="alpha">Sort: A–Z</option>
+          <option value="manual">Sort: My order</option>
+        </select>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="View">
+        <button class="tab" id="list-view-btn" role="tab" aria-selected="true" aria-controls="view-panel">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <rect x="0" y="1"    width="14" height="2.4" rx="1.2" fill="currentColor"/>
+            <rect x="0" y="5.8"  width="14" height="2.4" rx="1.2" fill="currentColor"/>
+            <rect x="0" y="10.6" width="14" height="2.4" rx="1.2" fill="currentColor"/>
+          </svg>
+          List
+        </button>
+        <button class="tab" id="kanban-view-btn" role="tab" aria-selected="false" aria-controls="view-panel">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <rect x="0"  y="0" width="4" height="14" rx="1.3" fill="currentColor"/>
+            <rect x="5"  y="0" width="4" height="10" rx="1.3" fill="currentColor"/>
+            <rect x="10" y="0" width="4" height="12" rx="1.3" fill="currentColor"/>
+          </svg>
+          Board
+        </button>
+      </div>
+
+      <div class="tabpanel" id="view-panel" role="tabpanel">
+        <ul id="task-list"></ul>
+
+        <div id="list-more">
+          <span id="list-more-text"></span>
+          <button class="btn btn--sm" id="list-more-btn">Show all</button>
+        </div>
+
+        <div id="empty-state">
+          <div class="empty-emoji" id="empty-emoji">🎉</div>
+          <div class="empty-title" id="empty-title">All clear!</div>
+          <div class="empty-sub" id="empty-sub">Add a task on the left to get started.</div>
+        </div>
+
+        <div id="kanban-board">
+          <div class="kb-column" data-status="past-due">
+            <div class="kb-column-header"><span>⚠ Past Due</span><span class="kb-count" id="kb-count-past-due">0</span></div>
+            <div class="kb-cards" id="kb-col-past-due" data-status="past-due"></div>
+          </div>
+          <div class="kb-column" data-status="todo">
+            <div class="kb-column-header"><span>To Do</span><span class="kb-count" id="kb-count-todo">0</span></div>
+            <div class="kb-cards" id="kb-col-todo" data-status="todo"></div>
+          </div>
+          <div class="kb-column" data-status="in-progress">
+            <div class="kb-column-header"><span>In Progress</span><span class="kb-count" id="kb-count-in-progress">0</span></div>
+            <div class="kb-cards" id="kb-col-in-progress" data-status="in-progress"></div>
+          </div>
+          <div class="kb-column" data-status="done">
+            <div class="kb-column-header"><span>Done</span><span class="kb-count" id="kb-count-done">0</span></div>
+            <div class="kb-cards" id="kb-col-done" data-status="done"></div>
+            <div class="kb-col-footer">
+              <span id="kb-done-note">Last 2 days</span>
+              <button class="btn btn--sm" id="kb-view-all-done">View all →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <span id="stats-text"></span>
+        <button class="btn btn--sm btn--red" id="clear-done">Clear completed</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-host" aria-live="polite"></div>
+  <div id="confetti" aria-hidden="true"></div>
+  <div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+  <div class="overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal" style="max-width:400px">
+      <h2 id="confirm-title">Delete this task?</h2>
+      <p id="confirm-msg">This can't be undone from here.</p>
+      <div class="modal-quote" id="confirm-quote"></div>
+      <div class="modal-actions">
+        <button class="btn" id="confirm-cancel">Cancel</button>
+        <button class="btn btn--red" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal">
+      <h2 id="help-title">Keyboard shortcuts</h2>
+      <div class="kbd-row"><kbd>N</kbd><span>Focus the new-task box</span></div>
+      <div class="kbd-row"><kbd>/</kbd><span>Search</span></div>
+      <div class="kbd-row"><kbd>1</kbd>–<kbd>5</kbd><span>All / Active / Done / Overdue / Soon</span></div>
+      <div class="kbd-row"><kbd>V</kbd><span>Switch List ⇄ Board</span></div>
+      <div class="kbd-row"><kbd>T</kbd><span>Cycle theme (light / dark / system)</span></div>
+      <div class="kbd-row"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Undo the last destructive action</span></div>
+      <div class="kbd-row"><kbd>Enter</kbd><span>Add task · save an edit</span></div>
+      <div class="kbd-row"><kbd>Ctrl</kbd>+<kbd>Enter</kbd><span>New line inside a task</span></div>
+      <div class="kbd-row"><kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd><span>Move the focused task (My order)</span></div>
+      <div class="kbd-row"><kbd>Esc</kbd><span>Cancel an edit · close this</span></div>
+      <div class="kbd-row"><kbd>?</kbd><span>Show this help</span></div>
+      <button class="btn btn--block btn--orange" id="help-close" style="margin-top:14px">Got it</button>
+    </div>
+  </div>
+
+<script>
+"use strict";
+
+/* ══ Constants ═══════════════════════════════════════════════════════════ */
+const STORE_KEY  = "tasks_v4";
+const PREF_KEY   = "todo_prefs_v1";
+const TOMB_KEY   = "todo_tombstones_v1";
+const SYNC_KEY   = "todo_sync_v1";     // repo coordinates (safe to keep)
+const TOKEN_KEY  = "todo_gh_token";    // kept apart; never exported
+const SEED_KEY   = "todo_is_seed";     // "the list is still the demo, not real work"
+const TOMB_TTL   = 90 * 24 * 60 * 60 * 1000;
+const TWO_DAYS   = 2 * 24 * 60 * 60 * 1000;
+const MAX_LEN    = 500;
+const PRIO_NAME  = ["None", "Low", "Med", "High"];
+const STATUSES   = ["todo", "in-progress", "done"];
+const STATUS_NAME= { "todo": "To Do", "in-progress": "In Progress", "done": "Done" };
+
+/* ══ Date helpers ════════════════════════════════════════════════════════ */
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function todayStr() { return ymd(new Date()); }
+function offsetDate(days) {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);          // midday avoids DST shifting the day
+  d.setDate(d.getDate() + days);
+  return ymd(d);
+}
+/*  Today's date, recomputed at most once a minute — enough to notice a day
+ *  rollover, cheap enough to call from a hot loop.  */
+let _dayStr = "", _dayStamp = 0;
+function currentDay() {
+  const now = Date.now();
+  if (now - _dayStamp > 60000) { _dayStr = todayStr(); _dayStamp = now; }
+  return _dayStr;
+}
+
+/** Whole days from today; negative = overdue. DST-safe (compares calendar dates).
+ *  Memoised: at 5,000 tasks this was being called ~30,000 times per render,
+ *  each allocating two Date objects. */
+const _duCache = new Map();
+let _duCacheDay = "";
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const day = currentDay();
+  if (day !== _duCacheDay) { _duCache.clear(); _duCacheDay = day; }
+  const hit = _duCache.get(dateStr);
+  if (hit !== undefined) return hit;
+
+  const parts = dateStr.split("-").map(Number);
+  let out = null;
+  if (parts.length === 3 && !parts.some(isNaN)) {
+    const due = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0, 0);
+    const p = day.split("-").map(Number);
+    const today = new Date(p[0], p[1] - 1, p[2], 12, 0, 0, 0);
+    out = Math.round((due - today) / 86400000);
+  }
+  _duCache.set(dateStr, out);
+  return out;
+}
+function formatDue(dateStr) {
+  const d = daysUntil(dateStr);
+  if (d === null) return "";
+  const parts = dateStr.split("-").map(Number);
+  return new Date(parts[0], parts[1] - 1, parts[2])
+    .toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function plural(n, word) { return `${n} ${word}${n === 1 ? "" : "s"}`; }
+/** Cut to n code points, not n UTF-16 units, so emoji never split in half. */
+function truncate(str, n) {
+  const cps = Array.from(String(str));
+  return cps.length > n ? cps.slice(0, n).join("") + "…" : String(str);
+}
+
+/* ══ Text helpers ════════════════════════════════════════════════════════ */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+const TAG_RE = /#([\p{L}\p{N}][\p{L}\p{N}_-]*)/gu;
+function tagsOf(text) {
+  const out = [];
+  for (const m of String(text).matchAll(TAG_RE)) {
+    const t = m[1].toLowerCase();
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
+}
+/**
+ * Render task text to safe HTML: #tags become chips, search hits get <mark>.
+ * Everything is escaped piecewise, so no user input ever reaches innerHTML raw.
+ */
+function renderText(text, query) {
+  const src = String(text);
+  const pieces = [];
+  let last = 0;
+  for (const m of src.matchAll(TAG_RE)) {
+    if (m.index > last) pieces.push({ tag: false, v: src.slice(last, m.index) });
+    pieces.push({ tag: true, v: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < src.length) pieces.push({ tag: false, v: src.slice(last) });
+
+  const q = (query || "").trim();
+  // Match on the original string. Lowercasing separately and indexing back
+  // into the source drifts for characters whose case change alters length
+  // (U+0130 "İ" lowercases to two code units), which shifted the <mark>.
+  const re = q ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi") : null;
+  const mark = (str) => {
+    if (!re) return escHtml(str);
+    re.lastIndex = 0;
+    let out = "", last = 0, m;
+    while ((m = re.exec(str)) !== null) {
+      if (m[0].length === 0) { re.lastIndex++; continue; }
+      out += escHtml(str.slice(last, m.index)) + "<mark>" + escHtml(m[0]) + "</mark>";
+      last = m.index + m[0].length;
+    }
+    return out + escHtml(str.slice(last));
+  };
+
+  return pieces.map(p =>
+    p.tag ? `<button type="button" class="task-tag" data-tag="${escHtml(p.v.slice(1).toLowerCase())}" `
+            + `aria-label="Filter by tag ${escHtml(p.v.slice(1).toLowerCase())}">${mark(p.v)}</button>`
+          : mark(p.v)
+  ).join("") || "&nbsp;";
+}
+
+function autoGrow(el, max = 220) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, max) + "px";
+}
+function insertNewline(ta, max = 220) {
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + "\n" + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + 1;
+  autoGrow(ta, max);
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/* ══ State ═══════════════════════════════════════════════════════════════ */
+let tasks   = [];
+let prefs   = { filter: "all", sort: "created", view: "list", theme: "system" };
+let search  = "";
+let tagFilter = null;
+let newPrio = 0;
+let undoSnapshot = null;      // { label, tasks }
+let editingId = null;         // task currently open in the inline text editor
+let lastAddedId = null;       // only this task plays the entrance animation
+let tombstones  = [];         // { id, deletedAt } — so deletes survive a merge
+let localIsSeed = false;      // true while the list is still the untouched demo
+let storageOK = true;
+
+/* ══ Persistence ═════════════════════════════════════════════════════════ */
+function normalizeTask(t, i) {
+  const text = typeof t.text === "string" ? t.text.slice(0, MAX_LEN) : "";
+  let status = STATUSES.includes(t.status) ? t.status : (t.done ? "done" : "todo");
+  return {
+    // Ids are interpolated into id="" / for="" attributes, so anything that
+    // isn't a plain identifier (e.g. from a hand-edited import file) is
+    // replaced rather than escaped at every use site.
+    id: (typeof t.id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(t.id)) ? t.id : uid(),
+    text,
+    status,
+    due: /^\d{4}-\d{2}-\d{2}$/.test(t.due) ? t.due : null,
+    priority: [0, 1, 2, 3].includes(t.priority) ? t.priority : 0,
+    order: Number.isFinite(t.order) ? t.order : i,
+    created: Number.isFinite(t.created) ? t.created : Date.now() - i,
+    completedAt: status === "done" ? (Number.isFinite(t.completedAt) ? t.completedAt : Date.now()) : null,
+    prevStatus: STATUSES.includes(t.prevStatus) ? t.prevStatus : null,
+    updatedAt: Number.isFinite(t.updatedAt) ? t.updatedAt
+             : (Number.isFinite(t.created) ? t.created : Date.now()),
+  };
+}
+/** Stamp a task as just-modified. Every mutation must go through this or
+ *  the merge can't tell which side is newer. */
+function touch(t) {
+  if (t) t.updatedAt = Date.now();
+  localIsSeed = false;
+  return t;
+}
+
+/** Record a deletion so it can beat a stale copy of the task on another device. */
+function tombstone(id) {
+  tombstones = tombstones.filter(x => x.id !== id);
+  tombstones.push({ id, deletedAt: Date.now() });
+  localIsSeed = false;
+}
+
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+}
+
+function makeDefaults() {
+  const now = Date.now();
+  const seed = [
+    ["Submit expense report",         "todo",        -3, 3],
+    ["Reply to client email #work",   "in-progress", -1, 3],
+    ["Buy groceries for the week #home", "todo",      2, 1],
+    ["Book flight tickets #travel",   "todo",         5, 2],
+    ["Review pull requests #work",    "todo",      null, 2],
+    ["Schedule dentist appointment",  "in-progress",  7, 1],
+    ["Finish Q3 presentation slides #work", "in-progress", 0, 3],
+  ];
+  const done = [
+    ["Read for 30 minutes before bed", -1, 3600000],
+    ["Set up weekly standup invite #work", null, 7200000],
+    ["Renew gym membership",          -5, 4 * 86400000],
+  ];
+  let i = 0;
+  const out = seed.map(([text, status, due, priority]) => ({
+    id: uid(), text, status, priority,
+    due: due === null ? null : offsetDate(due),
+    order: i, created: now - (i++) * 1e5, completedAt: null,
+  }));
+  done.forEach(([text, due, ago]) => out.push({
+    id: uid(), text, status: "done", priority: 0,
+    due: due === null ? null : offsetDate(due),
+    order: i, created: now - (i++) * 1e5, completedAt: now - ago,
+  }));
+  return out;
+}
+
+function load() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORE_KEY) || localStorage.getItem("tasks_v3"); }
+  catch { storageOK = false; }
+
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        tasks = parsed.map(normalizeTask);
+        localIsSeed = localStorage.getItem(SEED_KEY) === "1";
+      } else {
+        throw new Error("not an array");
+      }
+    } catch (err) {
+      // Never silently discard: keep a copy of whatever was there before reseeding.
+      try { localStorage.setItem(STORE_KEY + "_corrupt_backup", raw); } catch {}
+      tasks = makeDefaults();
+      setTimeout(() => toast("Saved tasks couldn't be read — a backup was kept.", null, null, 9000), 400);
+    }
+  } else {
+    tasks = makeDefaults();
+    localIsSeed = true;      // don't let demo data pollute a synced repo
+  }
+
+  try {
+    const raw = localStorage.getItem(TOMB_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(parsed)) tombstones = parsed.filter(t => t && typeof t.id === "string");
+  } catch {}
+
+  try {
+    const cfg = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}");
+    if (cfg && typeof cfg === "object") sync = Object.assign(sync, cfg);
+    sync.token = localStorage.getItem(TOKEN_KEY) || "";
+  } catch {}
+
+  try {
+    const p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}");
+    if (p && typeof p === "object") prefs = Object.assign(prefs, p);
+  } catch {}
+  if (!["all","active","done","overdue","soon"].includes(prefs.filter)) prefs.filter = "all";
+  if (!["created","due","priority","alpha","manual"].includes(prefs.sort)) prefs.sort = "created";
+  if (!["list","kanban"].includes(prefs.view)) prefs.view = "list";
+  if (!["light","dark","system"].includes(prefs.theme)) prefs.theme = "system";
+}
+
+function save() {
+  pruneTombstones();
+  if (storageOK) {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
+      localStorage.setItem(TOMB_KEY, JSON.stringify(tombstones));
+      if (localIsSeed) localStorage.setItem(SEED_KEY, "1");
+      else localStorage.removeItem(SEED_KEY);
+      localStorage.removeItem("tasks_v3");
+    } catch (err) {
+      storageOK = false;
+      toast("Couldn't save — storage is full or blocked. Export your tasks.", "Export", exportJson, 12000);
+    }
+  }
+  scheduleSync();
+}
+
+function pruneTombstones() {
+  const cutoff = Date.now() - TOMB_TTL;
+  tombstones = tombstones.filter(t => t && t.id && (t.deletedAt || 0) >= cutoff);
+}
+function savePrefs() {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {}
+}
+
+// Another tab wrote to storage — pick up its changes instead of clobbering them.
+window.addEventListener("storage", (e) => {
+  if (e.key !== STORE_KEY || !e.newValue) return;
+  // Re-rendering would tear down an open editor mid-keystroke. This tab's own
+  // save() will follow and win, which is the same last-write-wins either way.
+  if (editingId || document.querySelector(".overlay.visible")) return;
+  try {
+    const next = JSON.parse(e.newValue);
+    if (Array.isArray(next)) { tasks = next.map(normalizeTask); render(); }
+  } catch {}
+});
+
+/* ══ Derived ═════════════════════════════════════════════════════════════ */
+const isDone = (t) => t.status === "done";
+const isOverdue = (t) => !isDone(t) && t.due !== null && daysUntil(t.due) < 0;
+const isSoon = (t) => { if (isDone(t) || !t.due) return false; const d = daysUntil(t.due); return d >= 0 && d <= 3; };
+
+function matchesFilter(t, f) {
+  if (f === "done")    return isDone(t);
+  if (f === "active")  return !isDone(t);
+  if (f === "overdue") return isOverdue(t);
+  if (f === "soon")    return isSoon(t);
+  return true;
+}
+let _searchLc = "";
+function matchesSearch(t) {
+  if (!_searchLc) return true;
+  return t.text.toLowerCase().includes(_searchLc);
+}
+function matchesTag(t) {
+  return !tagFilter || tagsOf(t.text).includes(tagFilter);
+}
+function visibleTasks() {
+  return sortTasks(tasks.filter(t => matchesFilter(t, prefs.filter) && matchesSearch(t) && matchesTag(t)));
+}
+function sortTasks(arr) {
+  const by = prefs.sort;
+  return [...arr].sort((a, b) => {
+    if (by === "manual")   return a.order - b.order;
+    if (by === "priority") return (b.priority - a.priority) || (b.created - a.created);
+    if (by === "alpha")    return a.text.localeCompare(b.text, undefined, { sensitivity: "base" });
+    if (by === "due") {
+      if (!a.due && !b.due) return b.created - a.created;
+      if (!a.due) return 1;
+      if (!b.due) return -1;
+      return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+    }
+    return (b.created || 0) - (a.created || 0);
+  });
+}
+
+function dueBadge(task) {
+  if (!task.due) return null;
+  const d = daysUntil(task.due);
+  if (d === null) return null;
+  if (isDone(task)) return { cls: "done-badge", label: `✓ was due ${formatDue(task.due)}` };
+  if (d < 0)   return { cls: "overdue", label: `⚠ ${plural(Math.abs(d), "day")} overdue` };
+  if (d === 0) return { cls: "soon", label: "⚡ Due today" };
+  if (d === 1) return { cls: "soon", label: "⏳ Due tomorrow" };
+  if (d <= 3)  return { cls: "soon", label: `⏳ Due in ${plural(d, "day")}` };
+  return { cls: "ok", label: `📅 ${formatDue(task.due)}` };
+}
+function dueProgress(task) {
+  if (!task.due || isDone(task)) return null;
+  const d = daysUntil(task.due);
+  if (d === null) return null;
+  if (d < 0)  return { pct: 100, cls: "overdue" };
+  if (d === 0) return { pct: 100, cls: "soon" };
+  return { pct: Math.max(4, 100 - (d / 14) * 100), cls: d <= 3 ? "soon" : "ok" };
+}
+
+/* ══ Announce / toast ════════════════════════════════════════════════════ */
+const liveEl = document.getElementById("live");
+function announce(msg) { liveEl.textContent = ""; setTimeout(() => { liveEl.textContent = msg; }, 40); }
+
+let toastTimer = null;
+function toast(msg, actionLabel, onAction, ms = 7000) {
+  const host = document.getElementById("toast-host");
+  host.innerHTML = "";
+  clearTimeout(toastTimer);
+
+  const el = document.createElement("div");
+  el.className = "toast";
+  const span = document.createElement("span");
+  span.textContent = msg;
+  el.appendChild(span);
+
+  if (actionLabel && onAction) {
+    const btn = document.createElement("button");
+    btn.className = "btn btn--sm btn--orange";
+    btn.textContent = actionLabel;
+    btn.addEventListener("click", () => { host.innerHTML = ""; clearTimeout(toastTimer); onAction(); });
+    el.appendChild(btn);
+  }
+  host.appendChild(el);
+  toastTimer = setTimeout(() => { host.innerHTML = ""; }, ms);
+}
+
+/* ══ Undo ════════════════════════════════════════════════════════════════ */
+function snapshot(label) {
+  undoSnapshot = {
+    label,
+    tasks: tasks.map(t => ({ ...t })),
+    tombstones: tombstones.map(t => ({ ...t })),
+  };
+}
+function undo() {
+  if (!undoSnapshot) { toast("Nothing to undo"); return; }
+  tasks = undoSnapshot.tasks.map(t => ({ ...t }));
+  tombstones = (undoSnapshot.tombstones || []).map(t => ({ ...t }));
+  const what = undoSnapshot.label;
+  undoSnapshot = null;
+  save(); render();
+  announce(`Undid ${what}`);
+  toast(`Undid ${what}`);
+}
+
+/* ══ Actions ═════════════════════════════════════════════════════════════ */
+function addTask() {
+  const input = document.getElementById("new-task");
+  const dueInput = document.getElementById("new-due");
+  const text = input.value.replace(/[ \t]+$/gm, "").replace(/^\n+|\n+$/g, "").trim();
+  if (!text) { input.focus(); announce("Type something first"); return; }
+
+  const minOrder = tasks.length ? Math.min(...tasks.map(t => t.order)) : 0;
+  const task = {
+    id: uid(), text, status: "todo",
+    due: dueInput.value || null,
+    priority: newPrio,
+    order: minOrder - 1,
+    created: Date.now(),
+    completedAt: null,
+    updatedAt: Date.now(),
+  };
+  tasks.unshift(task);
+  touch(task);              // stamps updatedAt AND ends the "demo data" state
+  lastAddedId = task.id;
+  save();
+
+  // Don't let the new task vanish behind an active filter/search.
+  let reset = false;
+  if (!(matchesFilter(task, prefs.filter) && matchesSearch(task) && matchesTag(task))) {
+    prefs.filter = "all"; search = ""; tagFilter = null;
+    document.getElementById("search").value = "";
+    savePrefs();
+    reset = true;
+  }
+
+  input.value = "";
+  dueInput.value = "";
+  autoGrow(input, 340);
+  setQuickDate(null);
+  render();
+  lastAddedId = null;          // the animation is for this render only
+  input.focus();
+  announce(reset ? "Task added — filters cleared so you can see it" : "Task added");
+}
+
+/** Complete / un-complete, remembering which column the task came from so
+ *  un-ticking an "In Progress" task doesn't silently demote it to "To Do". */
+function toggle(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  const nowDone = !isDone(t);
+  if (nowDone) {
+    t.prevStatus = t.status;
+    t.status = "done";
+    t.completedAt = Date.now();
+  } else {
+    t.status = (t.prevStatus && t.prevStatus !== "done") ? t.prevStatus : "todo";
+    t.prevStatus = null;
+    t.completedAt = null;
+  }
+  touch(t);
+  save(); render();
+  announce(nowDone ? "Task completed" : "Task reopened");
+  if (nowDone && tasks.length > 0 && tasks.every(isDone)) celebrate();
+}
+
+async function remove(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+
+  const yes = await confirmAction({
+    title: "Delete this task?",
+    message: "It will be removed from your list.",
+    quote: t.text,
+    confirmLabel: "Delete",
+  });
+  if (!yes) { announce("Delete cancelled"); return; }
+  if (!tasks.some(x => x.id === id)) return;   // vanished while the dialog was open
+
+  snapshot("delete");
+  tasks = tasks.filter(x => x.id !== id);
+  tombstone(id);
+  save(); render();
+  const short = truncate(t.text, 30);
+  announce("Task deleted");
+  toast(`Deleted “${short.replace(/\n/g, " ")}”`, "Undo", undo);
+}
+
+function updateTask(id, patch) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return false;
+  let changed = false;
+  if (typeof patch.text === "string" && patch.text !== t.text) {
+    t.text = patch.text.slice(0, MAX_LEN);
+    changed = true;
+  }
+  if (Number.isInteger(patch.priority) && patch.priority !== t.priority) {
+    t.priority = patch.priority;
+    changed = true;
+  }
+  if (!changed) return false;
+  touch(t);
+  save(); render();
+  announce("Task updated");
+  return true;
+}
+function updateDue(id, due) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.due = due || null;
+  touch(t);
+  save(); render();
+  announce(due ? `Due ${formatDue(due)}` : "Due date cleared");
+}
+function cyclePriority(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.priority = (t.priority + 1) % 4;
+  touch(t);
+  save(); render();
+  announce(`Priority ${PRIO_NAME[t.priority]}`);
+}
+function setStatus(id, status) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !STATUSES.includes(status) || t.status === status) return;
+  if (status === "done") { t.prevStatus = t.status; t.completedAt = Date.now(); }
+  else { t.prevStatus = null; t.completedAt = null; }
+  t.status = status;
+  touch(t);
+  save(); render();
+  announce(`Moved to ${STATUS_NAME[status]}`);
+  if (status === "done" && tasks.length > 0 && tasks.every(isDone)) celebrate();
+}
+
+async function clearDone() {
+  const n = tasks.filter(isDone).length;
+  if (!n) return;
+
+  const yes = await confirmAction({
+    title: "Clear completed?",
+    message: `${plural(n, "completed task")} will be removed. You can undo straight after.`,
+    confirmLabel: "Clear them",
+  });
+  if (!yes) { announce("Clear cancelled"); return; }
+  if (!tasks.some(isDone)) return;
+
+  snapshot("clear completed");
+  tasks.filter(isDone).forEach(t => tombstone(t.id));
+  tasks = tasks.filter(t => !isDone(t));
+  save(); render();
+  announce(`${plural(n, "completed task")} cleared`);
+  toast(`Cleared ${plural(n, "completed task")}`, "Undo", undo);
+}
+
+/** Reorder in "My order"; adopts the current visual order first if needed. */
+function adoptCurrentOrder() {
+  sortTasks(tasks).forEach((t, i) => { t.order = i; });
+}
+function moveTask(id, dir) {
+  if (prefs.sort !== "manual") { adoptCurrentOrder(); prefs.sort = "manual"; savePrefs(); syncControls(); }
+  const list = visibleTasks();
+  const i = list.findIndex(t => t.id === id);
+  const j = i + dir;
+  if (i === -1 || j < 0 || j >= list.length) return;
+  const a = list[i], b = list[j];
+  const tmp = a.order; a.order = b.order; b.order = tmp;
+  touch(a); touch(b);
+  save(); render();
+  announce(`Moved ${dir < 0 ? "up" : "down"}, position ${j + 1} of ${list.length}`);
+}
+function dropReorder(dragId, targetId, before) {
+  if (dragId === targetId) return;
+  if (prefs.sort !== "manual") { adoptCurrentOrder(); prefs.sort = "manual"; savePrefs(); syncControls(); }
+  const ordered = sortTasks(tasks);
+  const from = ordered.findIndex(t => t.id === dragId);
+  if (from === -1) return;
+  const [moved] = ordered.splice(from, 1);
+  let to = ordered.findIndex(t => t.id === targetId);
+  if (to === -1) to = ordered.length;
+  ordered.splice(before ? to : to + 1, 0, moved);
+  ordered.forEach((t, i) => { if (t.order !== i) { t.order = i; touch(t); } });
+  save(); render();
+  announce("Task moved");
+}
+
+/* ══ Import / export ═════════════════════════════════════════════════════ */
+function exportJson() {
+  // Deliberately excludes the GitHub token — an export is meant to be shareable.
+  const payload = { app: "my-tasks", version: 5, exported: new Date().toISOString(),
+                    tasks: tasks.map(serializeTask), tombstones };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tasks-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  announce("Tasks exported");
+}
+
+function importJson(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let incoming;
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      incoming = Array.isArray(parsed) ? parsed : parsed && parsed.tasks;
+      if (!Array.isArray(incoming)) throw new Error("no task array");
+    } catch {
+      toast("That file isn't a valid task export.");
+      return;
+    }
+    const cleaned = incoming
+      .filter(t => t && typeof t.text === "string" && t.text.trim())
+      .map(normalizeTask);
+    if (!cleaned.length) { toast("No tasks found in that file."); return; }
+
+    snapshot("import");
+    localIsSeed = false;      // imported tasks are real data
+    const byId = new Set(tasks.map(t => t.id));
+    // Append after the existing arrangement instead of renumbering everything —
+    // adoptCurrentOrder() would overwrite a hand-built "My order" with whatever
+    // sort happens to be selected right now.
+    let maxOrder = tasks.length ? Math.max(...tasks.map(t => t.order)) : -1;
+    let added = 0;
+    cleaned.forEach(t => {
+      if (byId.has(t.id)) return;         // merge, don't duplicate
+      byId.add(t.id);
+      t.order = ++maxOrder;
+      tasks.push(t);
+      added++;
+    });
+    save(); render();
+    toast(`Imported ${plural(added, "task")}`, "Undo", undo);
+    announce(`Imported ${plural(added, "task")}`);
+  };
+  reader.onerror = () => toast("Couldn't read that file.");
+  reader.readAsText(file);
+}
+
+/* ══ Celebration ═════════════════════════════════════════════════════════ */
+function celebrate() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const host = document.getElementById("confetti");
+  const colors = ["--orange", "--blue", "--green", "--yellow", "--red"];
+  for (let i = 0; i < 28; i++) {
+    const bit = document.createElement("div");
+    bit.className = "confetti-bit";
+    bit.style.left = Math.random() * 100 + "vw";
+    bit.style.background = `var(${colors[i % colors.length]})`;
+    bit.style.animationDelay = (Math.random() * 0.5) + "s";
+    bit.style.animationDuration = (1.9 + Math.random() * 1.1) + "s";
+    host.appendChild(bit);
+  }
+  setTimeout(() => { host.innerHTML = ""; }, 3600);
+}
+
+/* ══ Confirm dialog ════════════════════════════════════════════════ */
+const confirmOverlay = document.getElementById("confirm-overlay");
+let confirmResolve = null;
+let confirmReturnFocus = null;
+
+function confirmAction(opts) {
+  const { title, message, quote, confirmLabel = "Delete", danger = true } = opts;
+  document.getElementById("confirm-title").textContent = title;
+  document.getElementById("confirm-msg").textContent = message;
+  const q = document.getElementById("confirm-quote");
+  q.textContent = quote || "";
+  q.style.display = quote ? "" : "none";
+
+  const okBtn = document.getElementById("confirm-ok");
+  okBtn.textContent = confirmLabel;
+  okBtn.className = "btn " + (danger ? "btn--red" : "btn--orange");
+
+  confirmReturnFocus = document.activeElement;
+  confirmOverlay.classList.add("visible");
+  okBtn.focus();
+  return new Promise((resolve) => { confirmResolve = resolve; });
+}
+
+function closeConfirm(result) {
+  if (!confirmResolve) return;
+  confirmOverlay.classList.remove("visible");
+  const done = confirmResolve;
+  confirmResolve = null;
+  const target = confirmReturnFocus;
+  confirmReturnFocus = null;
+
+  done(result);
+
+  // Restore focus AFTER the awaiting caller has had its turn — remove() and
+  // clearDone() re-render, which would otherwise throw the focus away again.
+  setTimeout(() => {
+    // The dismissed dialog's button can still be document.activeElement here
+    // (the browser blurs a hidden element a tick later), so "not body" is not
+    // a good enough test for "focus already landed somewhere useful".
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected && a.closest && !a.closest(".overlay")) return;
+    // The origin control may still exist but be hidden now — "Clear completed"
+    // hides itself once there is nothing left to clear — and focusing a
+    // display:none element silently does nothing, so verify it took.
+    if (target && target.isConnected && target.getClientRects().length && target.focus) {
+      target.focus();
+      if (document.activeElement === target) return;
+    }
+    const next = document.querySelector("#task-list .cb-wrap input, .kb-card .status-select")
+              || document.getElementById("new-task");
+    if (next) next.focus();
+  }, 0);
+}
+
+document.getElementById("confirm-ok").addEventListener("click", () => closeConfirm(true));
+document.getElementById("confirm-cancel").addEventListener("click", () => closeConfirm(false));
+confirmOverlay.addEventListener("click", (e) => { if (e.target === confirmOverlay) closeConfirm(false); });
+confirmOverlay.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { e.stopPropagation(); closeConfirm(false); return; }
+  if (e.key === "Tab") {                     // keep focus inside the dialog
+    e.preventDefault();
+    const btns = [document.getElementById("confirm-cancel"), document.getElementById("confirm-ok")];
+    const i = btns.indexOf(document.activeElement);
+    btns[(i + (e.shiftKey ? btns.length - 1 : 1)) % btns.length].focus();
+  }
+});
+
+/* ══ Inline editors ══════════════════════════════════════════════════════ */
+function startTextEdit(displayEl, taskId) {
+  if (!displayEl || !displayEl.isConnected || editingId) return;
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  editingId = taskId;
+  invalidateNode(taskId);        // this row's DOM no longer matches its signature
+  let pendingPrio = task.priority;
+
+  // Dragging must be off while editing or the text can't be selected.
+  const card = displayEl.closest(".kb-card");
+  if (card) card.draggable = false;
+  const item = displayEl.closest(".task-item");
+  if (item) item.draggable = false;
+
+  const wrap = document.createElement("div");
+  wrap.className = "task-edit";
+
+  const ta = document.createElement("textarea");
+  ta.className = "text-edit-input";
+  ta.value = task.text;
+  ta.maxLength = MAX_LEN;
+  ta.setAttribute("aria-label", "Edit task text");
+  wrap.appendChild(ta);
+
+  // ── priority row ──────────────────────────────────────────────────────
+  const prioRow = document.createElement("div");
+  prioRow.className = "task-edit-row";
+  prioRow.setAttribute("role", "group");
+  prioRow.setAttribute("aria-label", "Task priority");
+  const prioLabel = document.createElement("span");
+  prioLabel.className = "field-label";
+  prioLabel.textContent = "Priority";
+  prioRow.appendChild(prioLabel);
+
+  const prioBtns = PRIO_NAME.map((name, level) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip chip--p" + level;
+    b.textContent = name;
+    b.setAttribute("aria-pressed", String(level === pendingPrio));
+    // Keep the caret in the textarea so the editor never blurs shut.
+    b.addEventListener("mousedown", (e) => e.preventDefault());
+    b.addEventListener("click", () => {
+      pendingPrio = level;
+      prioBtns.forEach((x, i) => x.setAttribute("aria-pressed", String(i === level)));
+      announce("Priority " + PRIO_NAME[level]);
+    });
+    prioRow.appendChild(b);
+    return b;
+  });
+  wrap.appendChild(prioRow);
+
+  // ── save / cancel ─────────────────────────────────────────────────────
+  const actions = document.createElement("div");
+  actions.className = "task-edit-actions";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "btn btn--sm btn--green";
+  saveBtn.textContent = "Save";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btn btn--sm";
+  cancelBtn.textContent = "Cancel";
+
+  const hint = document.createElement("span");
+  hint.className = "edit-hint";
+  hint.textContent = "Enter saves \u00b7 Ctrl+Enter new line \u00b7 Esc cancels";
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  actions.appendChild(hint);
+  wrap.appendChild(actions);
+
+  displayEl.replaceWith(wrap);
+  autoGrow(ta);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  let settled = false;
+  const finish = (commit) => {
+    if (settled) return;
+    settled = true;
+    editingId = null;
+    invalidateNode(taskId);      // rebuild the row so the editor is torn down
+    const still = tasks.find(t => t.id === taskId);
+    const val = ta.value.trim();
+    // Committing an empty task would erase it, so treat that as a cancel.
+    // updateTask only re-renders when something actually changed, so when it
+    // reports "no change" we must still render to tear the editor down —
+    // otherwise the row stays stuck in edit mode with every key a no-op.
+    const applied = commit && still && val
+      && updateTask(taskId, { text: val, priority: pendingPrio });
+    if (!applied) render();
+  };
+
+  saveBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  saveBtn.addEventListener("click", () => finish(true));
+  cancelBtn.addEventListener("mousedown", (e) => e.preventDefault());
+  cancelBtn.addEventListener("click", () => finish(false));
+
+  ta.addEventListener("input", () => autoGrow(ta));
+  ta.addEventListener("keydown", (e) => {
+    e.stopPropagation();                                 // don't trip global shortcuts
+    if (e.isComposing || e.keyCode === 229) return;      // mid-IME conversion
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); insertNewline(ta); }
+    else if (e.key === "Enter" && !e.shiftKey)          { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape")                         { e.preventDefault(); finish(false); }
+  });
+
+  // Escape must work wherever focus sits inside the editor. The textarea's
+  // own handler stops propagation, so this only ever sees events from the
+  // priority chips and the Save / Cancel buttons.
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    e.preventDefault();
+    e.stopPropagation();
+    finish(false);
+  });
+
+  // Save when focus genuinely leaves the whole editor, not when it moves
+  // between the textarea and the editor's own buttons.
+  wrap.addEventListener("focusout", (e) => {
+    if (wrap.contains(e.relatedTarget)) return;
+    setTimeout(() => { if (!wrap.contains(document.activeElement)) finish(true); }, 0);
+  });
+}
+
+/* ══ Render ══════════════════════════════════════════════════════════════ */
+/** Chrome that mirrors filter state must be derived here, not only in the
+ *  handlers — addTask clears filters on its own when the new task would be
+ *  hidden, and the tag pill / search "x" have to follow. */
+function syncFilterChrome() {
+  const bar = document.getElementById("tag-filter-bar");
+  bar.classList.toggle("visible", !!tagFilter);
+  if (tagFilter) document.getElementById("tag-filter-name").textContent = "#" + tagFilter;
+
+  const si = document.getElementById("search");
+  if (si.value !== search) si.value = search;
+  document.getElementById("search-clear").classList.toggle("visible", !!search);
+}
+
+/** render() rebuilds the rows from scratch, which destroys whatever the
+ *  keyboard user was standing on. Note which task + which control had focus
+ *  first, and put them back afterwards. */
+function captureFocus() {
+  const a = document.activeElement;
+  const panel = document.getElementById("view-panel");
+  if (!a || a === document.body || !a.closest || !panel.contains(a)) return null;
+  const host = a.closest("[data-id]");
+  if (!host) return null;
+
+  let ctrl = null;
+  if (a.closest(".task-edit"))                        ctrl = '[data-act="edit-text"]';
+  else if (a.matches('input[type="checkbox"]'))       ctrl = ".cb-wrap input";
+  else if (a.classList.contains("status-select"))     ctrl = ".status-select";
+  else if (a.classList.contains("task-tag"))          ctrl = ".task-tag";
+  else if (a.classList.contains("inline-date-input")) ctrl = ".inline-date-input";
+  else if (a.dataset && a.dataset.act)                ctrl = `[data-act="${a.dataset.act}"]`;
+  return ctrl ? { id: host.dataset.id, ctrl } : null;
+}
+
+function restoreFocus(key) {
+  if (!key) return;
+  const root = document.getElementById(prefs.view === "kanban" ? "kanban-board" : "task-list");
+  if (!root) return;
+  const host = root.querySelector(`[data-id="${CSS.escape(key.id)}"]`);
+  const el = host && host.querySelector(key.ctrl);
+  if (el) {
+    // The date popover is opened by a class, which a fresh render drops.
+    if (el.classList.contains("inline-date-input")) el.classList.add("visible");
+    el.focus();
+    return;
+  }
+  // That task is gone (deleted, or filtered out) — land on the nearest thing
+  // rather than dumping focus on <body>.
+  const next = root.querySelector('.cb-wrap input, .status-select, [data-act="del"]');
+  if (next) next.focus();
+}
+
+function render() {
+  const focusKey = captureFocus();
+  _searchLc = search.trim().toLowerCase();
+  syncFilterChrome();
+  document.body.classList.toggle("kanban-mode", prefs.view === "kanban");
+  document.getElementById("kanban-board").classList.toggle("visible", prefs.view === "kanban");
+  if (prefs.view === "kanban") renderKanban(); else renderList();
+  updateCounts();
+  updateSummary();
+  updateBanner();
+  restoreFocus(focusKey);
+}
+
+function priorityBadge(task) {
+  if (!task.priority) return "";
+  return `<span class="badge prio${task.priority}">${PRIO_NAME[task.priority]}</span>`;
+}
+
+const CHECK_SVG = `<svg width="13" height="11" viewBox="0 0 13 11" fill="none" aria-hidden="true">
+  <path d="M1.5 5.5L4.8 8.8L11.2 1.6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const GRIP_SVG = `<svg width="11" height="16" viewBox="0 0 11 16" fill="currentColor" aria-hidden="true">
+  <circle cx="2.2" cy="2.4" r="1.5"/><circle cx="8.8" cy="2.4" r="1.5"/>
+  <circle cx="2.2" cy="8" r="1.5"/><circle cx="8.8" cy="8" r="1.5"/>
+  <circle cx="2.2" cy="13.6" r="1.5"/><circle cx="8.8" cy="13.6" r="1.5"/></svg>`;
+const CAL_SVG = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <rect x="1.2" y="3.2" width="13.6" height="11.6" rx="2.4" stroke="currentColor" stroke-width="1.9"/>
+  <path d="M5 1.2v3.6M11 1.2v3.6M1.2 7h13.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`;
+const PEN_SVG = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path d="M11.4 1.6l3 3L4.8 14.2H1.8v-3L11.4 1.6z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>`;
+const X_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+  <path d="M2.4 2.4l9.2 9.2M11.6 2.4L2.4 11.6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+
+/*
+ *  Rendering is keyed and incremental. A full innerHTML rebuild costs ~0.5s at
+ *  500 tasks and throws away every row to change one checkbox, so instead each
+ *  row is cached against a signature of everything that affects its markup.
+ *  Unchanged rows are reused as-is; only genuinely changed rows are rebuilt,
+ *  and order is fixed up with insertBefore.
+ */
+const listNodes = new Map();     // task id -> { el, sig }
+const cardNodes = new Map();     // task id -> { el, sig }  (board)
+const NODE_CACHE_MAX = 1500;     // detached rows cost memory, not layout
+const RENDER_CAP = 300;          // rows built at once before offering "Show all"
+let showAllRows = false;
+
+/*  Filtering a row out doesn't mean throwing its DOM away. Searching and
+ *  then clearing the search is a round trip through the same rows, so keep
+ *  unmounted ones around — bounded, oldest evicted first.  */
+function trimNodeCache(map, live) {
+  if (map.size <= NODE_CACHE_MAX) return;
+  for (const id of map.keys()) {
+    if (map.size <= NODE_CACHE_MAX) break;
+    if (!live.has(id)) map.delete(id);
+  }
+}
+
+/** Everything that can alter a row's markup. Miss a field here and the UI
+ *  goes stale; add a spurious one and you lose the reuse. */
+function rowSignature(task, ctx) {
+  return [
+    task.text, task.status, task.due, task.priority,
+    task.completedAt || 0, task.id === lastAddedId ? 1 : 0,
+    ctx.search, ctx.manual ? 1 : 0, ctx.day,
+  ].join("\u0001");
+}
+
+/** Force the next render to rebuild this row — used when something mutates a
+ *  row's DOM directly (the inline editor) without changing the task itself. */
+function invalidateNode(id) {
+  listNodes.delete(id);
+  cardNodes.delete(id);
+}
+
+/** Reorder `parent` to match `els` exactly, moving nodes rather than
+ *  recreating them, and drop anything left over. */
+function reconcile(parent, els) {
+  let cursor = parent.firstChild;
+  for (const el of els) {
+    if (cursor === el) { cursor = cursor.nextSibling; continue; }
+    parent.insertBefore(el, cursor);          // moves el if already present
+  }
+  while (cursor) { const next = cursor.nextSibling; parent.removeChild(cursor); cursor = next; }
+}
+
+function buildTaskEl(task, manual) {
+  const done = isDone(task);
+  const badge = dueBadge(task);
+  const prog = dueProgress(task);
+
+  const item = document.createElement("li");
+  item.className = `task-item${done ? " done" : ""}${task.priority ? " p" + task.priority : ""}`
+    + (task.id === lastAddedId ? " is-new" : "");
+  item.dataset.id = task.id;
+  item.draggable = manual;
+
+  item.innerHTML = `
+      <div class="task-main">
+        ${manual ? `<span class="drag-handle" title="Drag to reorder" aria-hidden="true">${GRIP_SVG}</span>` : ""}
+        <label class="cb-wrap">
+          <input type="checkbox" ${done ? "checked" : ""} />
+          <span class="sr-only">Mark “${escHtml(truncate(task.text, 60))}” complete</span>
+          <span class="cb-box">${CHECK_SVG}</span>
+        </label>
+        <div class="task-body">
+          <div class="task-text" title="Click to edit">${renderText(task.text, search)}</div>
+          <div class="task-meta">
+            ${badge ? `<span class="badge ${badge.cls}">${badge.label}</span>` : ""}
+            ${priorityBadge(task)}
+            <label class="sr-only" for="st-${task.id}">Status</label>
+            <select class="status-select" id="st-${task.id}" data-act="status">
+              ${STATUSES.map(st => `<option value="${st}"${task.status === st ? " selected" : ""}>${STATUS_NAME[st]}</option>`).join("")}
+            </select>
+          </div>
+          <label class="sr-only" for="due-${task.id}">Due date</label>
+          <input class="inline-date-input" id="due-${task.id}" type="date" value="${task.due || ""}" data-act="due" />
+        </div>
+        <div class="task-actions">
+          <button class="iconbtn" data-act="prio" title="Priority: ${PRIO_NAME[task.priority]} (click to change)" aria-label="Priority ${PRIO_NAME[task.priority]}, click to change">${["\u2013","L","M","H"][task.priority]}</button>
+          <button class="iconbtn" data-act="edit-text" title="Edit task" aria-label="Edit task">${PEN_SVG}</button>
+          <button class="iconbtn" data-act="edit-date" title="Set due date" aria-label="Set due date">${CAL_SVG}</button>
+          <button class="iconbtn iconbtn--danger" data-act="del" title="Delete" aria-label="Delete task">${X_SVG}</button>
+        </div>
+      </div>
+      ${prog ? `<div class="due-progress"><div class="due-progress-fill ${prog.cls}" style="width:${prog.pct}%"></div></div>` : ""}
+    `;
+  return item;
+}
+
+function renderList() {
+  const list = document.getElementById("task-list");
+  const empty = document.getElementById("empty-state");
+
+  const more = document.getElementById("list-more");
+  const all = visibleTasks();
+  empty.classList.toggle("visible", all.length === 0);
+  if (all.length === 0) {
+    list.replaceChildren();
+    listNodes.clear();
+    more.classList.remove("visible");
+    setEmptyState();
+    return;
+  }
+
+  // Putting thousands of rows in the DOM at once is the one cost keyed
+  // rendering can't avoid, so cap it and let the user opt in to the rest.
+  const capped = !showAllRows && all.length > RENDER_CAP;
+  const visible = capped ? all.slice(0, RENDER_CAP) : all;
+  more.classList.toggle("visible", capped);
+  if (capped) {
+    document.getElementById("list-more-text").textContent =
+      `Showing ${RENDER_CAP} of ${all.length} tasks`;
+  }
+
+  const ctx = { search, manual: prefs.sort === "manual", day: todayStr() };
+  const els = [];
+  const seen = new Set();
+
+  for (const task of visible) {
+    const sig = rowSignature(task, ctx);
+    const cached = listNodes.get(task.id);
+    let el;
+    if (cached && cached.sig === sig) {
+      el = cached.el;                          // untouched — reuse verbatim
+    } else {
+      el = buildTaskEl(task, ctx.manual);
+      listNodes.set(task.id, { el, sig });
+    }
+    seen.add(task.id);
+    els.push(el);
+  }
+
+  reconcile(list, els);
+  // Drop rows for tasks that no longer exist at all; keep merely-filtered ones.
+  const alive = new Set(tasks.map(t => t.id));
+  for (const id of listNodes.keys()) if (!alive.has(id)) listNodes.delete(id);
+  trimNodeCache(listNodes, seen);
+}
+
+function setEmptyState() {
+  const emoji = document.getElementById("empty-emoji");
+  const title = document.getElementById("empty-title");
+  const sub = document.getElementById("empty-sub");
+  if (search || tagFilter) {
+    emoji.textContent = "🔍"; title.textContent = "No matches";
+    sub.textContent = tagFilter ? `Nothing tagged #${truncate(tagFilter, 40)}.`
+                                : `Nothing matches “${truncate(search, 40)}”.`;
+  } else if (prefs.filter === "done") {
+    emoji.textContent = "📋"; title.textContent = "Nothing completed yet";
+    sub.textContent = "Tick something off and it'll show up here.";
+  } else if (prefs.filter === "overdue") {
+    emoji.textContent = "🎉"; title.textContent = "Nothing overdue";
+    sub.textContent = "You're all caught up.";
+  } else if (prefs.filter === "soon") {
+    emoji.textContent = "😌"; title.textContent = "Nothing due soon";
+    sub.textContent = "No deadlines in the next 3 days.";
+  } else if (prefs.filter === "active") {
+    emoji.textContent = "✅"; title.textContent = "All done!";
+    sub.textContent = "Every task is complete. Nice work.";
+  } else {
+    emoji.textContent = "🌱"; title.textContent = "No tasks yet";
+    sub.textContent = "Add your first one on the left.";
+  }
+}
+
+function renderKanban() {
+  const pool = tasks.filter(t => matchesSearch(t) && matchesTag(t));
+
+  const pastDue = sortTasks(pool.filter(isOverdue));
+  renderColumn("past-due", pastDue);
+
+  ["todo", "in-progress"].forEach(status => {
+    renderColumn(status, sortTasks(pool.filter(t => t.status === status && !isOverdue(t))));
+  });
+
+  const now = Date.now();
+  const allDone = sortTasks(pool.filter(isDone));
+  const recent = allDone.filter(t => !t.completedAt || (now - t.completedAt) <= TWO_DAYS);
+  renderColumn("done", recent);
+  document.getElementById("kb-count-done").textContent = allDone.length;
+  const hidden = allDone.length - recent.length;
+  document.getElementById("kb-done-note").textContent = hidden > 0 ? `Last 2 days · ${hidden} older hidden` : "Last 2 days";
+  document.getElementById("kb-view-all-done").style.display = hidden > 0 ? "" : "none";
+}
+
+function buildCardEl(task) {
+  const done = isDone(task);
+  const badge = dueBadge(task);
+  const card = document.createElement("div");
+  card.className = `kb-card${done ? " done" : ""}${task.priority ? " p" + task.priority : ""}`
+    + (task.id === lastAddedId ? " is-new" : "");
+  card.draggable = true;
+  card.dataset.id = task.id;
+
+  card.innerHTML = `
+      <div class="kb-card-body">
+        <div class="kb-card-top">
+          <span class="kb-grip" aria-hidden="true">${GRIP_SVG}</span>
+          <div class="kb-card-text" title="Click to edit">${renderText(task.text, search)}</div>
+        </div>
+        <div class="kb-card-meta">
+          ${badge ? `<span class="badge ${badge.cls}">${badge.label}</span>` : ""}
+          ${priorityBadge(task)}
+          <label class="sr-only" for="kst-${task.id}">Move task to column</label>
+          <select class="status-select" id="kst-${task.id}" data-act="status">
+            ${STATUSES.map(st => `<option value="${st}"${task.status === st ? " selected" : ""}>${STATUS_NAME[st]}</option>`).join("")}
+          </select>
+          <div class="kb-card-actions">
+            ${!done ? `<button class="iconbtn" data-act="edit-date" title="Set due date" aria-label="Set due date">${CAL_SVG}</button>` : ""}
+            <button class="iconbtn" data-act="edit-text" title="Edit task" aria-label="Edit task">${PEN_SVG}</button>
+            <button class="iconbtn iconbtn--danger" data-act="del" title="Delete" aria-label="Delete task">${X_SVG}</button>
+          </div>
+        </div>
+        <label class="sr-only" for="kdue-${task.id}">Due date</label>
+        <input class="inline-date-input" id="kdue-${task.id}" type="date" value="${task.due || ""}" data-act="due" />
+      </div>`;
+  return card;
+}
+
+function renderColumn(status, colTasks) {
+  const col = document.getElementById(`kb-col-${status}`);
+  if (!col) return;
+  const countEl = document.getElementById(`kb-count-${status}`);
+  if (countEl) countEl.textContent = colTasks.length;
+
+  if (!colTasks.length) {
+    const empty = document.createElement("div");
+    empty.className = "kb-empty";
+    empty.textContent = status === "past-due" ? "\ud83c\udf89 Nothing overdue" : "Drop tasks here";
+    col.replaceChildren(empty);
+    return;
+  }
+
+  const ctx = { search, manual: false, day: todayStr() };
+  const els = [];
+  for (const task of colTasks) {
+    const sig = rowSignature(task, ctx);
+    const cached = cardNodes.get(task.id);
+    let el;
+    if (cached && cached.sig === sig) {
+      el = cached.el;
+    } else {
+      el = buildCardEl(task);
+      cardNodes.set(task.id, { el, sig });
+    }
+    els.push(el);
+  }
+  reconcile(col, els);
+}
+
+/* ══ Summary widgets ═════════════════════════════════════════════════════ */
+function updateCounts() {
+  // One pass instead of one scan per filter button.
+  const n = { all: 0, active: 0, done: 0, overdue: 0, soon: 0 };
+  for (const t of tasks) {
+    if (!matchesSearch(t) || !matchesTag(t)) continue;
+    n.all++;
+    if (isDone(t)) { n.done++; continue; }
+    n.active++;
+    if (isOverdue(t)) n.overdue++;
+    else if (isSoon(t)) n.soon++;
+  }
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    const f = btn.dataset.filter;
+    btn.querySelector(".cnt").textContent = n[f] || 0;
+    btn.setAttribute("aria-pressed", String(f === prefs.filter));
+  });
+}
+
+function updateSummary() {
+  const total = tasks.length;
+  const done = tasks.filter(isDone).length;
+  const active = total - done;
+  const overdue = tasks.filter(isOverdue).length;
+  const soon = tasks.filter(isSoon).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById("stat-active").textContent = active;
+  document.getElementById("stat-sub").textContent =
+    overdue ? `⚠ ${plural(overdue, "task")} overdue`
+    : soon ? `⏳ ${soon} due soon`
+    : total === 0 ? "nothing yet"
+    : active === 0 ? "🎉 all done" : "on track";
+
+  const C = 2 * Math.PI * 27;
+  const ring = document.getElementById("ring-fill");
+  ring.setAttribute("stroke-dasharray", C.toFixed(1));
+  ring.setAttribute("stroke-dashoffset", (C * (1 - pct / 100)).toFixed(1));
+  document.getElementById("ring-label").textContent = pct + "%";
+
+  document.getElementById("stats-text").textContent =
+    total === 0 ? "No tasks yet" : `${done} of ${total} completed${overdue ? ` · ${overdue} overdue` : ""}`;
+  document.getElementById("clear-done").style.display = done > 0 ? "" : "none";
+}
+
+function updateBanner() {
+  const banner = document.getElementById("overdue-banner");
+  const n = tasks.filter(isOverdue).length;
+  banner.classList.toggle("visible", n > 0 && prefs.filter !== "overdue");
+  if (n > 0) document.getElementById("overdue-text").textContent = `⚠ ${plural(n, "task")} overdue`;
+}
+
+/* ══ Event delegation: list + board ══════════════════════════════════════ */
+function taskIdFrom(el) {
+  const host = el.closest("[data-id]");
+  return host ? host.dataset.id : null;
+}
+
+document.getElementById("view-panel").addEventListener("click", (e) => {
+  const tagEl = e.target.closest(".task-tag");
+  if (tagEl) { setTagFilter(tagEl.dataset.tag); return; }
+
+  const id = taskIdFrom(e.target);
+  if (!id) return;
+  const btn = e.target.closest("[data-act]");
+  const act = btn ? btn.dataset.act : null;
+
+  if (act === "del")   { remove(id); return; }
+  if (act === "prio")  { cyclePriority(id); return; }
+  if (act === "edit-text") {
+    const host = e.target.closest("[data-id]");
+    const disp = host.querySelector(".task-text, .kb-card-text");
+    startTextEdit(disp, id);
+    return;
+  }
+  if (act === "edit-date") {
+    const host = e.target.closest("[data-id]");
+    const input = host.querySelector(".inline-date-input");
+    input.classList.toggle("visible");
+    if (input.classList.contains("visible")) { input.focus(); if (input.showPicker) { try { input.showPicker(); } catch {} } }
+    return;
+  }
+  if (e.target.closest(".task-edit")) return;          // already editing
+  const disp = e.target.closest(".task-text, .kb-card-text");
+  if (disp) startTextEdit(disp, id);
+});
+
+document.getElementById("view-panel").addEventListener("change", (e) => {
+  const id = taskIdFrom(e.target);
+  if (!id) return;
+  if (e.target.matches("input[type=checkbox]")) { toggle(id); return; }
+  if (e.target.dataset.act === "status") { setStatus(id, e.target.value); return; }
+  if (e.target.dataset.act === "due") {
+    // Chrome commits a `change` on every year digit, so typing "2026" also
+    // fires 0002 / 0020 / 0202 first. Ignore those partial years instead of
+    // saving and re-rendering three junk dates out from under the caret.
+    const v = e.target.value;
+    if (v && Number(v.slice(0, 4)) < 1000) return;
+    updateDue(id, v);
+    return;
+  }
+});
+
+// Close the date popover when focus leaves it without a change.
+document.getElementById("view-panel").addEventListener("focusout", (e) => {
+  if (e.target.classList && e.target.classList.contains("inline-date-input")) {
+    const el = e.target;
+    setTimeout(() => { if (document.activeElement !== el) el.classList.remove("visible"); }, 120);
+  }
+});
+
+// Alt+↑/↓ reorders the focused task.
+document.getElementById("view-panel").addEventListener("keydown", (e) => {
+  if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+  // <select> and <input type=date> use Alt+Arrow themselves to open their
+  // pickers — never hijack that. A checkbox has no such binding.
+  const tag = (e.target.tagName || "").toLowerCase();
+  const isCheckbox = tag === "input" && e.target.type === "checkbox";
+  if ((tag === "select" || tag === "textarea" || tag === "input") && !isCheckbox) return;
+  const id = taskIdFrom(e.target);
+  if (!id) return;
+  e.preventDefault();
+  moveTask(id, e.key === "ArrowUp" ? -1 : 1);
+});
+
+/* ══ Drag & drop ═════════════════════════════════════════════════════════ */
+let dragId = null;
+
+document.getElementById("view-panel").addEventListener("dragstart", (e) => {
+  const host = e.target.closest(".task-item, .kb-card");
+  if (!host) return;
+  dragId = host.dataset.id;
+  host.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+  try { e.dataTransfer.setData("text/plain", dragId); } catch {}
+});
+document.getElementById("view-panel").addEventListener("dragend", (e) => {
+  document.querySelectorAll(".dragging").forEach(el => el.classList.remove("dragging"));
+  document.querySelectorAll(".drop-before, .drop-after").forEach(el => el.classList.remove("drop-before", "drop-after"));
+  document.querySelectorAll(".kb-cards.drag-over").forEach(el => el.classList.remove("drag-over"));
+  dragId = null;
+});
+
+// List reordering
+document.getElementById("task-list").addEventListener("dragover", (e) => {
+  if (!dragId) return;
+  const item = e.target.closest(".task-item");
+  if (!item || item.dataset.id === dragId) return;
+  e.preventDefault();
+  const rect = item.getBoundingClientRect();
+  const before = e.clientY < rect.top + rect.height / 2;
+  document.querySelectorAll(".drop-before, .drop-after").forEach(el => el.classList.remove("drop-before", "drop-after"));
+  item.classList.add(before ? "drop-before" : "drop-after");
+});
+document.getElementById("task-list").addEventListener("drop", (e) => {
+  if (!dragId) return;
+  const item = e.target.closest(".task-item");
+  if (!item) return;
+  e.preventDefault();
+  const rect = item.getBoundingClientRect();
+  dropReorder(dragId, item.dataset.id, e.clientY < rect.top + rect.height / 2);
+  dragId = null;
+});
+
+// Board columns
+document.querySelectorAll(".kb-cards").forEach(col => {
+  const isPastDue = col.dataset.status === "past-due";
+  col.addEventListener("dragover", (e) => {
+    if (isPastDue || !dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    col.classList.add("drag-over");
+  });
+  col.addEventListener("dragleave", (e) => {
+    if (!col.contains(e.relatedTarget)) col.classList.remove("drag-over");
+  });
+  col.addEventListener("drop", (e) => {
+    if (isPastDue || !dragId) return;
+    e.preventDefault();
+    col.classList.remove("drag-over");
+    const t = tasks.find(x => x.id === dragId);
+    const target = col.dataset.status;
+    const wasOverdue = !!t && isOverdue(t) && target !== "done";
+    const movedId = dragId;
+    dragId = null;
+
+    setStatus(movedId, target);
+
+    // Past Due is a virtual column: an overdue task renders there whatever its
+    // status, so the card appears to snap back. Say so, and offer the one edit
+    // that actually moves it — rather than silently rewriting the due date.
+    if (wasOverdue) {
+      toast(
+        `Moved to ${STATUS_NAME[target]} — still shown in Past Due until it has a future due date.`,
+        "Due today",
+        () => updateDue(movedId, todayStr()),
+        9000
+      );
+    }
+  });
+});
+
+/* ══ Controls ════════════════════════════════════════════════════════════ */
+function syncControls() {
+  document.getElementById("sort-select").value = prefs.sort;
+  document.getElementById("list-view-btn").setAttribute("aria-selected", String(prefs.view === "list"));
+  document.getElementById("kanban-view-btn").setAttribute("aria-selected", String(prefs.view === "kanban"));
+}
+
+function setFilter(f) {
+  prefs.filter = f; showAllRows = false; savePrefs(); render();
+  announce(`Filter: ${f}`);
+}
+function setView(v) {
+  prefs.view = v; savePrefs(); syncControls(); render();
+  announce(v === "kanban" ? "Board view" : "List view");
+}
+function setTagFilter(tag) {
+  tagFilter = tag || null;
+  showAllRows = false;
+  render();
+  announce(tagFilter ? `Filtered by #${tagFilter}` : "Tag filter cleared");
+}
+function setQuickDate(days) {
+  const input = document.getElementById("new-due");
+  if (days === null) {
+    document.querySelectorAll(".qd-btn").forEach(b => b.setAttribute("aria-pressed", "false"));
+    return;
+  }
+  input.value = offsetDate(days);
+  document.querySelectorAll(".qd-btn").forEach(b =>
+    b.setAttribute("aria-pressed", String(Number(b.dataset.days) === days)));
+}
+
+/* ══ Theme ═══════════════════════════════════════════════════════════════ */
+const THEME_ICON = { light: "☀", dark: "🌙", system: "🌗" };
+function applyTheme() {
+  const root = document.documentElement;
+  if (prefs.theme === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", prefs.theme);
+  const btn = document.getElementById("theme-btn");
+  btn.textContent = THEME_ICON[prefs.theme];
+  btn.title = `Theme: ${prefs.theme} (click to change)`;
+  btn.setAttribute("aria-label", `Theme: ${prefs.theme}. Click to change.`);
+}
+function cycleTheme() {
+  const order = ["light", "dark", "system"];
+  prefs.theme = order[(order.indexOf(prefs.theme) + 1) % order.length];
+  savePrefs(); applyTheme();
+  announce(`Theme: ${prefs.theme}`);
+}
+
+/* ══ Wiring ══════════════════════════════════════════════════════════════ */
+const newTask = document.getElementById("new-task");
+newTask.addEventListener("input", () => autoGrow(newTask, 340));
+newTask.addEventListener("keydown", (e) => {
+  e.stopPropagation();
+  if (e.isComposing || e.keyCode === 229) return;        // mid-IME conversion
+  if (e.key !== "Enter") return;
+  if (e.ctrlKey || e.metaKey) { e.preventDefault(); insertNewline(newTask, 340); }
+  else if (e.shiftKey) { /* native newline */ }
+  else { e.preventDefault(); addTask(); }
+});
+document.getElementById("add-btn").addEventListener("click", addTask);
+
+document.querySelectorAll(".chip[data-prio]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    newPrio = Number(btn.dataset.prio);
+    document.querySelectorAll(".chip[data-prio]").forEach(b =>
+      b.setAttribute("aria-pressed", String(Number(b.dataset.prio) === newPrio)));
+  });
+});
+document.querySelectorAll(".qd-btn").forEach(btn => {
+  btn.addEventListener("click", () => setQuickDate(Number(btn.dataset.days)));
+});
+document.getElementById("new-due").addEventListener("input", () => {
+  document.querySelectorAll(".qd-btn").forEach(b => b.setAttribute("aria-pressed", "false"));
+});
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => setFilter(btn.dataset.filter));
+});
+document.getElementById("sort-select").addEventListener("change", (e) => {
+  prefs.sort = e.target.value;
+  if (prefs.sort === "manual") adoptCurrentOrder();
+  savePrefs(); save(); render();
+});
+document.getElementById("list-view-btn").addEventListener("click", () => setView("list"));
+document.getElementById("kanban-view-btn").addEventListener("click", () => setView("kanban"));
+document.getElementById("clear-done").addEventListener("click", clearDone);
+document.getElementById("list-more-btn").addEventListener("click", () => {
+  showAllRows = true;
+  render();
+  announce("Showing all tasks");
+});
+document.getElementById("theme-btn").addEventListener("click", cycleTheme);
+document.getElementById("tag-filter-clear").addEventListener("click", () => setTagFilter(null));
+document.getElementById("overdue-jump").addEventListener("click", () => setFilter("overdue"));
+
+const searchInput = document.getElementById("search");
+const searchClear = document.getElementById("search-clear");
+let searchTimer = null;
+searchInput.addEventListener("input", () => {
+  searchClear.classList.toggle("visible", !!searchInput.value);
+  // Every keystroke changes the highlight on every visible row, so this is
+  // the one render that can't reuse anything. Let typing settle first.
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    search = searchInput.value;
+    showAllRows = false;
+    render();
+  }, 140);
+});
+searchInput.addEventListener("keydown", (e) => {
+  e.stopPropagation();
+  if (e.key === "Escape") {
+    clearTimeout(searchTimer);
+    searchInput.value = ""; search = ""; searchClear.classList.remove("visible"); render();
+  }
+});
+searchClear.addEventListener("click", () => {
+  clearTimeout(searchTimer);
+  searchInput.value = ""; search = ""; searchClear.classList.remove("visible"); render(); searchInput.focus();
+});
+
+document.getElementById("kb-view-all-done").addEventListener("click", () => {
+  prefs.view = "list"; prefs.filter = "done"; savePrefs(); syncControls(); render();
+});
+
+document.getElementById("export-btn").addEventListener("click", exportJson);
+document.getElementById("import-btn").addEventListener("click", () => document.getElementById("import-file").click());
+document.getElementById("import-file").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) importJson(f);
+  e.target.value = "";
+});
+
+/* help modal */
+const helpOverlay = document.getElementById("help-overlay");
+let lastFocus = null;
+function openHelp() {
+  lastFocus = document.activeElement;
+  helpOverlay.classList.add("visible");
+  document.getElementById("help-close").focus();
+}
+function closeHelp() {
+  helpOverlay.classList.remove("visible");
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+document.getElementById("help-btn").addEventListener("click", openHelp);
+document.getElementById("help-close").addEventListener("click", closeHelp);
+helpOverlay.addEventListener("click", (e) => { if (e.target === helpOverlay) closeHelp(); });
+helpOverlay.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { e.stopPropagation(); closeHelp(); }
+  if (e.key === "Tab") { e.preventDefault(); document.getElementById("help-close").focus(); }
+});
+
+/* global shortcuts */
+document.addEventListener("keydown", (e) => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  const typing = tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable;
+
+  // Guard first: an undo while the delete dialog is open would restore the
+  // list underneath it, and the awaiting remove() would then delete the wrong
+  // task when the user confirms.
+  if (document.querySelector(".overlay.visible")) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); undo(); return; }
+  if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const k = e.key;
+  if (k === "/")               { e.preventDefault(); searchInput.focus(); searchInput.select(); }
+  else if (k.toLowerCase() === "n") { e.preventDefault(); newTask.focus(); }
+  else if (k.toLowerCase() === "v") { e.preventDefault(); setView(prefs.view === "list" ? "kanban" : "list"); }
+  else if (k.toLowerCase() === "t") { e.preventDefault(); cycleTheme(); }
+  else if (k === "?")          { e.preventDefault(); openHelp(); }
+  else if (k >= "1" && k <= "5") {
+    e.preventDefault();
+    setFilter(["all", "active", "done", "overdue", "soon"][Number(k) - 1]);
+  }
+});
+
+/* ══ GitHub sync ═════════════════════════════════════════════════════ */
+/*
+ *  The repo's data.json is the shared store. Reading a PUBLIC repo needs no
+ *  credentials at all, so any browser on any machine sees your tasks with zero
+ *  setup; only WRITING needs a token, entered once per browser.
+ *
+ *  Concurrency comes from git itself: every read returns the blob's `sha`, and
+ *  a write must quote it. If the other device wrote in between, GitHub answers
+ *  409/422 and we re-read, merge, and retry rather than clobbering.
+ */
+const GH_API = "https://api.github.com";
+
+/*  GitHub's documented secondary limits cap content-creating requests at
+ *  80/minute and 500/hour, and every save here is a commit. A 2.5s debounce
+ *  alone would allow ~1,440 commits/hour, roughly 3x over. So two knobs:
+ *  settle briefly after the last edit, but never commit more often than
+ *  MIN_PUSH_GAP — which caps us at 360/hour, comfortably inside 500.  */
+const PUSH_DEBOUNCE = 3000;
+const MIN_PUSH_GAP  = 10000;
+const SIZE_WARN     = 750 * 1024;   // the Contents API tops out around 1 MB
+
+let sync = { owner: "", repo: "", branch: "main", path: "data.json", token: "", auto: true };
+let remoteSha = null;
+let remoteEtag = null;        // conditional GETs: a 304 is free when authorised
+let lastPushedFingerprint = null;
+let lastPushAt = 0;
+let lastPullAt = 0;
+let rateLimitedUntil = 0;
+let rateStrikes = 0;
+let sizeWarned = false;
+let syncTimer = null;
+let syncBusy = false;
+let pushQueued = false;
+let initialPullDone = false;
+
+const syncConfigured = () => !!(sync.owner && sync.repo && sync.path);
+const canWrite = () => syncConfigured() && !!sync.token;
+
+/* ── base64 <-> UTF-8 (btoa is byte-only; task text is not) ──────────── */
+function toB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  const CHUNK = 0x8000;                       // avoid blowing the arg limit
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+function fromB64(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ""));   // GitHub wraps at 60 cols
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+/* ── merge: newest edit wins; a delete wins only if it came after ────── */
+function mergeState(lTasks, lTombs, rTasks, rTombs) {
+  const tombs = new Map();
+  [].concat(lTombs || [], rTombs || []).forEach(t => {
+    if (!t || typeof t.id !== "string") return;
+    const at = Number(t.deletedAt) || 0;
+    const prev = tombs.get(t.id);
+    if (!prev || at > prev.deletedAt) tombs.set(t.id, { id: t.id, deletedAt: at });
+  });
+
+  const byId = new Map();
+  [].concat(lTasks || [], rTasks || []).forEach(t => {
+    if (!t || typeof t.id !== "string") return;
+    const prev = byId.get(t.id);
+    if (!prev || (t.updatedAt || 0) > (prev.updatedAt || 0)) byId.set(t.id, t);
+  });
+
+  const outTasks = [];
+  byId.forEach((t, id) => {
+    const tomb = tombs.get(id);
+    if (tomb && tomb.deletedAt >= (t.updatedAt || 0)) return;   // stayed deleted
+    outTasks.push(t);
+  });
+
+  const cutoff = Date.now() - TOMB_TTL;
+  const outTombs = [];
+  tombs.forEach((tomb, id) => {
+    const t = byId.get(id);
+    if (t && (t.updatedAt || 0) > tomb.deletedAt) return;       // re-created since
+    if (tomb.deletedAt < cutoff) return;
+    outTombs.push(tomb);
+  });
+
+  return { tasks: outTasks, tombstones: outTombs };
+}
+
+/*  Roughly a third of the old payload was fields at their default value —
+ *  "priority": 0, "completedAt": null, "prevStatus": null on every single
+ *  task. normalizeTask() re-derives all of them on read, so they never need
+ *  to be written. Kept pretty-printed on purpose: one task per few lines
+ *  gives git a small delta per commit, where a single minified line would
+ *  make every commit a full-file rewrite.  */
+function serializeTask(t) {
+  const o = { id: t.id, text: t.text };
+  if (t.status !== "todo") o.status = t.status;
+  if (t.due) o.due = t.due;
+  if (t.priority) o.priority = t.priority;
+  if (t.completedAt) o.completedAt = t.completedAt;
+  if (t.prevStatus) o.prevStatus = t.prevStatus;
+  o.order = t.order;
+  o.created = t.created;
+  o.updatedAt = t.updatedAt;
+  return o;
+}
+
+function remotePayload() {
+  return {
+    app: "my-tasks",
+    version: 5,
+    updatedAt: new Date().toISOString(),
+    tasks: tasks.map(serializeTask),
+    tombstones,
+  };
+}
+
+/*  Identity of the tasks themselves, ignoring the payload's wrapper timestamp.
+ *  Skips a commit when what we'd write is byte-identical to what we last
+ *  wrote — a redundant push, or one issued right after a pull already
+ *  reconciled us. Note per-task updatedAt IS included: it drives the merge,
+ *  so an edit that returns to the old value still commits, on purpose.  */
+function contentFingerprint() {
+  return JSON.stringify({ t: tasks.map(serializeTask), d: tombstones });
+}
+
+function contentsUrl(withRef) {
+  const path = String(sync.path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  const base = `${GH_API}/repos/${encodeURIComponent(sync.owner)}/${encodeURIComponent(sync.repo)}/contents/${path}`;
+  return withRef ? `${base}?ref=${encodeURIComponent(sync.branch || "main")}` : base;
+}
+function ghHeaders() {
+  const h = { "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+  if (sync.token) h["Authorization"] = "Bearer " + sync.token;
+  return h;
+}
+
+/*  A 403 can mean "bad token" OR "you are being rate limited" — treating
+ *  them the same would have the app tell you your token is broken when it is
+ *  simply going too fast. Distinguish them, and back off the way GitHub's
+ *  own guidance says to.  */
+function isRateLimited(res, bodyText) {
+  if (res.status === 429) return true;
+  if (res.status !== 403) return false;
+  if (res.headers.get("x-ratelimit-remaining") === "0") return true;
+  return /rate limit/i.test(bodyText || "");
+}
+
+function rateLimitWaitMs(res) {
+  const retryAfter = Number(res.headers.get("retry-after"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return retryAfter * 1000;
+
+  const reset = Number(res.headers.get("x-ratelimit-reset"));
+  if (res.headers.get("x-ratelimit-remaining") === "0" && Number.isFinite(reset)) {
+    return Math.max(1000, reset * 1000 - Date.now());
+  }
+  // Documented guidance when neither header is present: at least a minute,
+  // escalating if it keeps happening.
+  return Math.min(15 * 60 * 1000, 60000 * Math.pow(2, rateStrikes));
+}
+
+function noteRateLimit(res, where) {
+  rateStrikes++;
+  const wait = rateLimitWaitMs(res);
+  rateLimitedUntil = Date.now() + wait;
+  const mins = Math.max(1, Math.round(wait / 60000));
+  setSyncStatus("rate", `GitHub rate limit hit on ${where} — retrying in about ${mins} minute${mins === 1 ? "" : "s"}`);
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => { if (canWrite()) pushRemote(); }, wait + 500);
+}
+
+/* ── status pill ─────────────────────────────────────────────────────── */
+let syncState = "off";
+function setSyncStatus(state, detail) {
+  syncState = state;
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  const map = {
+    off:     ["Not connected", "off"],
+    ready:   ["Connected", "ok"],
+    pending: ["Changes pending…", "busy"],
+    syncing: ["Syncing…", "busy"],
+    synced:  ["Synced", "ok"],
+    readonly:["Read-only (no token)", "warn"],
+    offline: ["Offline — will retry", "warn"],
+    rate:    ["Rate limited — waiting", "warn"],
+    error:   ["Sync error", "bad"],
+  };
+  const [label, cls] = map[state] || map.off;
+  el.textContent = label;
+  el.className = "sync-pill " + cls;
+  el.title = detail || label;
+}
+
+/* ── pull ────────────────────────────────────────────────────────────── */
+async function pullRemote() {
+  if (!syncConfigured()) { setSyncStatus("off"); return { skipped: true }; }
+  setSyncStatus("syncing");
+  lastPullAt = Date.now();
+  try {
+    // A conditional GET costs nothing against the primary rate limit when it
+    // comes back 304 and we're authorised, so re-checking is cheap.
+    const headers = ghHeaders();
+    if (remoteEtag) headers["If-None-Match"] = remoteEtag;
+    const res = await fetch(contentsUrl(true), { headers, cache: "no-store" });
+
+    if (res.status === 304) {                 // unchanged since we last looked
+      initialPullDone = true;
+      setSyncStatus(canWrite() ? "synced" : "readonly", "Up to date");
+      return { ok: true, notModified: true };
+    }
+
+    if (res.status === 404) {
+      // A 404 here is ambiguous: the file may be absent, or the repo name may
+      // be wrong. Ask about the repo so a typo doesn't masquerade as "all set".
+      remoteSha = null;
+      initialPullDone = true;
+      const repoRes = await fetch(
+        `${GH_API}/repos/${encodeURIComponent(sync.owner)}/${encodeURIComponent(sync.repo)}`,
+        { headers: ghHeaders(), cache: "no-store" }
+      ).catch(() => null);
+
+      if (!repoRes || repoRes.status === 404) {
+        setSyncStatus("error", `No repo ${sync.owner}/${sync.repo} (or it's private and the token can't see it)`);
+        return { noRepo: true };
+      }
+      setSyncStatus(canWrite() ? "ready" : "readonly", `${sync.path} doesn't exist yet — it'll be created on the first save`);
+      render();
+      return { missing: true };
+    }
+    if (res.status === 401 || res.status === 403 || res.status === 429) {
+      const body = await res.text();
+      if (isRateLimited(res, body)) { noteRateLimit(res, "read"); return { error: "rate" }; }
+      setSyncStatus("error", res.status === 401
+        ? "Token rejected"
+        : "Forbidden — check the token has Contents access to this repo");
+      return { error: "auth" };
+    }
+    if (!res.ok) throw new Error("GET " + res.status);
+
+    rateStrikes = 0;
+    const j = await res.json();
+    remoteSha = j.sha || null;
+    remoteEtag = res.headers.get("etag");
+    const parsed = JSON.parse(fromB64(j.content || ""));
+    const rTasks = (Array.isArray(parsed) ? parsed : (parsed && parsed.tasks) || []).map(normalizeTask);
+    const rTombs = (parsed && parsed.tombstones) || [];
+
+    if (localIsSeed && rTasks.length) {
+      // First run on this machine: the demo list is not real data, so adopt
+      // the repo wholesale instead of merging ten fake tasks into it.
+      tasks = rTasks;
+      tombstones = rTombs;
+      localIsSeed = false;
+      try { localStorage.removeItem(SEED_KEY); } catch {}
+    } else {
+      const merged = mergeState(tasks, tombstones, rTasks, rTombs);
+      tasks = merged.tasks;
+      tombstones = merged.tombstones;
+    }
+
+    initialPullDone = true;
+    lastPushedFingerprint = contentFingerprint();   // local now matches remote
+    if (storageOK) {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
+        localStorage.setItem(TOMB_KEY, JSON.stringify(tombstones));
+      } catch {}
+    }
+    render();
+    setSyncStatus(canWrite() ? "synced" : "readonly");
+    return { ok: true };
+  } catch (err) {
+    initialPullDone = true;                   // don't wedge pushes forever
+    setSyncStatus(navigator.onLine ? "error" : "offline", String(err.message || err));
+    return { error: err };
+  }
+}
+
+/* ── push, with the sha as the conflict guard ────────────────────────── */
+async function pushRemote(attempt) {
+  attempt = attempt || 0;
+  if (!canWrite()) { setSyncStatus(syncConfigured() ? "readonly" : "off"); return { skipped: true }; }
+  if (syncBusy) { pushQueued = true; return { queued: true }; }
+
+  // Nothing actually changed (an edit that undid itself, or a pull that
+  // already reconciled us) — don't spend a commit on it.
+  const fingerprint = contentFingerprint();
+  if (remoteSha && fingerprint === lastPushedFingerprint) {
+    setSyncStatus("synced", "No changes to push");
+    return { ok: true, unchanged: true };
+  }
+
+  if (Date.now() < rateLimitedUntil) {
+    const mins = Math.max(1, Math.round((rateLimitedUntil - Date.now()) / 60000));
+    setSyncStatus("rate", `Waiting out a rate limit — about ${mins} more minute${mins === 1 ? "" : "s"}`);
+    return { skipped: "rate" };
+  }
+
+  syncBusy = true;
+  lastPushAt = Date.now();
+  setSyncStatus("syncing");
+  try {
+    const body = {
+      message: `tasks: ${tasks.length} item${tasks.length === 1 ? "" : "s"} · ${new Date().toISOString()}`,
+      content: toB64(JSON.stringify(remotePayload(), null, 2)),
+      branch: sync.branch || "main",
+    };
+    if (remoteSha) body.sha = remoteSha;
+
+    const res = await fetch(contentsUrl(false), {
+      method: "PUT",
+      headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
+      body: JSON.stringify(body),
+    });
+
+    // 409 = someone else wrote; 422 = our sha is stale or missing.
+    if ((res.status === 409 || res.status === 422) && attempt < 3) {
+      syncBusy = false;
+      await pullRemote();                     // merges their changes into ours
+      return pushRemote(attempt + 1);
+    }
+    // A brand-new repo has no commits, so its default branch isn't a real ref
+    // yet and naming it 404s. Retry once letting GitHub pick the default,
+    // which creates the initial commit.
+    if (res.status === 404 && body.branch && attempt < 3) {
+      delete body.branch;
+      const retry = await fetch(contentsUrl(false), {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
+        body: JSON.stringify(body),
+      });
+      if (retry.ok) {
+        const rj = await retry.json();
+        remoteSha = (rj.content && rj.content.sha) || null;
+        setSyncStatus("synced");
+        return { ok: true, createdDefaultBranch: true };
+      }
+      setSyncStatus("error", "Couldn't write — if the repo is brand new, add a README to it first, then Connect again.");
+      return { error: "empty-repo" };
+    }
+    if (res.status === 401 || res.status === 403 || res.status === 429) {
+      const txt = await res.text();
+      if (isRateLimited(res, txt)) { noteRateLimit(res, "save"); return { error: "rate" }; }
+      setSyncStatus("error", "Token rejected or missing Contents: write on this repo");
+      return { error: "auth" };
+    }
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error("PUT " + res.status + " " + txt.slice(0, 140));
+    }
+
+    const j = await res.json();
+    remoteSha = (j.content && j.content.sha) || null;
+    remoteEtag = null;                     // our own write invalidates it
+    rateStrikes = 0;
+    lastPushedFingerprint = fingerprint;
+    setSyncStatus("synced");
+
+    // The Contents API stops returning inline content somewhere around 1 MB,
+    // so say something well before that rather than breaking silently.
+    const bytes = new Blob([body.content]).size * 0.75;
+    if (bytes > SIZE_WARN && !sizeWarned) {
+      sizeWarned = true;
+      toast(`${sync.path} is ${Math.round(bytes / 1024)} KB. Clearing completed tasks keeps syncing fast.`, null, null, 12000);
+    }
+    return { ok: true };
+  } catch (err) {
+    setSyncStatus(navigator.onLine ? "error" : "offline", String(err.message || err));
+    return { error: err };
+  } finally {
+    syncBusy = false;
+    if (pushQueued) { pushQueued = false; scheduleSync(); }
+  }
+}
+
+/* ── debounce: one push a few seconds after the last edit ─────────────── */
+function scheduleSync() {
+  if (!canWrite() || !sync.auto || !initialPullDone) return;
+  clearTimeout(syncTimer);
+  setSyncStatus("pending");
+  const sinceLast = Date.now() - lastPushAt;
+  const wait = Math.max(
+    PUSH_DEBOUNCE,                          // let a burst of edits settle
+    MIN_PUSH_GAP - sinceLast,               // and cap the commit rate
+    rateLimitedUntil - Date.now()           // plus any backoff we owe
+  );
+  syncTimer = setTimeout(() => pushRemote(), wait);
+}
+
+window.addEventListener("online", () => {
+  if (syncConfigured() && (syncState === "offline" || syncState === "error")) pullRemote().then(() => scheduleSync());
+});
+// Best-effort flush if the tab closes with an edit still queued.
+window.addEventListener("beforeunload", () => {
+  if (canWrite() && syncState === "pending") { clearTimeout(syncTimer); pushRemote(); }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    // Far more reliable than beforeunload on mobile, where tabs are frozen
+    // rather than unloaded.
+    if (canWrite() && syncState === "pending") { clearTimeout(syncTimer); pushRemote(); }
+  } else if (syncConfigured() && Date.now() - lastPullAt > 30000) {
+    pullRemote();          // cheap: a 304 costs nothing when authorised
+  }
+});
+
+/* ══ Sync UI ═══════════════════════════════════════════════════════ */
+const syncBody = document.getElementById("sync-body");
+const syncFields = {
+  owner:  document.getElementById("sync-owner"),
+  repo:   document.getElementById("sync-repo"),
+  branch: document.getElementById("sync-branch"),
+  path:   document.getElementById("sync-path"),
+  token:  document.getElementById("sync-token"),
+};
+
+function fillSyncForm() {
+  syncFields.owner.value  = sync.owner || "";
+  syncFields.repo.value   = sync.repo || "";
+  syncFields.branch.value = sync.branch || "main";
+  syncFields.path.value   = sync.path || "data.json";
+  syncFields.token.value  = sync.token || "";
+}
+
+function openSyncPanel(open) {
+  syncBody.classList.toggle("open", open);
+  const btn = document.getElementById("sync-toggle");
+  btn.setAttribute("aria-expanded", String(open));
+  btn.textContent = open ? "Hide" : (syncConfigured() ? "Settings" : "Set up");
+}
+
+document.getElementById("sync-toggle").addEventListener("click", () => {
+  openSyncPanel(!syncBody.classList.contains("open"));
+});
+
+document.getElementById("sync-save").addEventListener("click", async () => {
+  sync.owner  = syncFields.owner.value.trim().replace(/^@/, "");
+  sync.repo   = syncFields.repo.value.trim().replace(/\.git$/, "");
+  sync.branch = syncFields.branch.value.trim() || "main";
+  sync.path   = syncFields.path.value.trim() || "data.json";
+  sync.token  = syncFields.token.value.trim();
+
+  if (!sync.owner || !sync.repo) { toast("Owner and repo are both required."); return; }
+
+  try {
+    // The token lives under its own key so an accidental copy of the config
+    // (or an export) can never carry it along.
+    localStorage.setItem(SYNC_KEY, JSON.stringify({
+      owner: sync.owner, repo: sync.repo, branch: sync.branch, path: sync.path, auto: true,
+    }));
+    if (sync.token) localStorage.setItem(TOKEN_KEY, sync.token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+
+  // The demo list is never real data. Connecting a repo is the moment to drop
+  // it, so a brand-new repo doesn't get seeded with ten fake tasks. Any real
+  // edit clears localIsSeed, so genuine work is never discarded here.
+  if (localIsSeed) {
+    tasks = [];
+    tombstones = [];
+    localIsSeed = false;
+    try { localStorage.removeItem(SEED_KEY); } catch {}
+    render();               // the demo rows are gone; don't leave them on screen
+  }
+
+  initialPullDone = false;
+  const r = await pullRemote();
+  if (r && r.missing && canWrite()) {
+    await pushRemote();                       // create data.json on first connect
+    toast("Connected — created " + sync.path);
+  } else if (r && r.ok) {
+    toast(canWrite() ? "Connected and synced." : "Connected (read-only — no token).");
+  } else if (r && r.noRepo) {
+    toast(`Can't find github.com/${sync.owner}/${sync.repo} — check the owner and repo name.`, null, null, 10000);
+  } else if (r && r.missing && !canWrite()) {
+    toast(`${sync.path} doesn't exist yet — add a token to create it.`, null, null, 9000);
+  } else if (r && r.error) {
+    toast("Couldn't reach that repo. Check the token and branch.", null, null, 9000);
+  }
+  openSyncPanel(false);
+});
+
+document.getElementById("sync-pull").addEventListener("click", async () => {
+  if (!syncConfigured()) { toast("Set up sync first."); return; }
+  const r = await pullRemote();
+  toast(r && r.ok ? "Pulled from GitHub." : r && r.missing ? "No data.json there yet." : "Pull failed.");
+});
+
+document.getElementById("sync-push").addEventListener("click", async () => {
+  if (!canWrite()) { toast("A token with Contents: write is needed to save."); return; }
+  clearTimeout(syncTimer);
+  const r = await pushRemote();
+  toast(r && r.ok ? "Pushed to GitHub." : "Push failed — see the status pill.");
+});
+
+document.getElementById("sync-forget").addEventListener("click", async () => {
+  const yes = await confirmAction({
+    title: "Disconnect sync?",
+    message: "Your tasks stay in this browser and the repo keeps its copy. The token is removed from this browser.",
+    confirmLabel: "Disconnect",
+  });
+  if (!yes) return;
+  try { localStorage.removeItem(SYNC_KEY); localStorage.removeItem(TOKEN_KEY); } catch {}
+  sync = { owner: "", repo: "", branch: "main", path: "data.json", token: "", auto: true };
+  remoteSha = null;
+  clearTimeout(syncTimer);
+  fillSyncForm();
+  setSyncStatus("off");
+  toast("Sync disconnected.");
+});
+
+/* ══ Boot ════════════════════════════════════════════════════════════════ */
+try {
+  load();
+  save();        // persist the seed / finish the v3 migration on first run
+} catch (err) {
+  // Nothing about a storage failure should be able to leave a blank page.
+  storageOK = false;
+  if (!Array.isArray(tasks) || !tasks.length) tasks = makeDefaults();
+}
+applyTheme();
+syncControls();
+autoGrow(newTask, 340);
+
+const now = new Date();
+document.getElementById("date-label").textContent =
+  now.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const hr = now.getHours();
+document.getElementById("greeting").textContent =
+  (hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening") + " 👋";
+
+render();
+
+fillSyncForm();
+if (syncConfigured()) {
+  setSyncStatus(canWrite() ? "ready" : "readonly");
+  pullRemote();                 // adopt whatever the repo already holds
+} else {
+  setSyncStatus("off");
+  initialPullDone = true;       // purely local until sync is configured
+}
+</script>
+</body>
+</html>
